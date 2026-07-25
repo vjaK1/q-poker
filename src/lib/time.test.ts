@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { formatElapsed, formatMelbourneTime, logicalDayISO, sessionDisplayName } from './time'
+import {
+  formatElapsed,
+  formatMelbourneISO,
+  formatMelbourneTime,
+  logicalDayISO,
+  sessionDisplayName,
+} from './time'
 
 describe('logicalDayISO — 3am rule, Melbourne', () => {
   it('assigns a past-midnight game to the previous evening', () => {
@@ -45,6 +51,18 @@ describe('formatElapsed', () => {
   })
   it('never goes negative', () => {
     expect(formatElapsed(start, Date.parse('2026-07-24T08:59:00Z'))).toBe('0m')
+  })
+})
+
+describe('formatMelbourneISO', () => {
+  it('renders AEST (+10:00) in winter', () => {
+    expect(formatMelbourneISO('2026-07-24T09:02:00Z')).toBe('2026-07-24T19:02:00+10:00')
+  })
+  it('renders AEDT (+11:00) in summer', () => {
+    expect(formatMelbourneISO('2026-01-09T14:30:00Z')).toBe('2026-01-10T01:30:00+11:00')
+  })
+  it('renders midnight as 00, not 24', () => {
+    expect(formatMelbourneISO('2026-07-24T14:00:00Z')).toBe('2026-07-25T00:00:00+10:00')
   })
 })
 

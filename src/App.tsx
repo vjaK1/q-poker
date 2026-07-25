@@ -10,6 +10,7 @@ import { CountQueueScreen } from './screens/CountQueueScreen'
 import { ReconcileScreen } from './screens/ReconcileScreen'
 import { SessionsScreen } from './screens/SessionsScreen'
 import { SessionDetailScreen } from './screens/SessionDetailScreen'
+import { ExportScreen } from './screens/ExportScreen'
 import { TabBar } from './components/TabBar'
 
 export default function App() {
@@ -56,6 +57,7 @@ type View =
   | { name: 'reconcile' }
   | { name: 'sessions' }
   | { name: 'sessionDetail'; sessionId: string }
+  | { name: 'export'; sessionId: string; from: 'detail' | 'saved' }
 
 // The count queue (who was seated when "End session" was tapped) survives an
 // app reload via localStorage; the fallback is whoever is seated now.
@@ -174,8 +176,22 @@ function SessionApp({ email }: { email: string | null }) {
         <SessionDetailScreen
           sessionId={effective.sessionId}
           onBack={() => setView({ name: 'sessions' })}
+          onExport={(sessionId) => setView({ name: 'export', sessionId, from: 'detail' })}
         />
       )
+
+    case 'export': {
+      const { sessionId, from } = effective
+      return (
+        <ExportScreen
+          sessionId={sessionId}
+          backLabel={from === 'detail' ? 'Session' : 'Home'}
+          onBack={() =>
+            setView(from === 'detail' ? { name: 'sessionDetail', sessionId } : { name: 'home' })
+          }
+        />
+      )
+    }
 
     case 'start':
       return (
@@ -242,14 +258,16 @@ function SessionApp({ email }: { email: string | null }) {
   }
 
   function renderReconcile() {
+    const sessionId = live!.session.id
     return (
       <ReconcileScreen
         state={live!}
         refresh={refresh}
         onSaved={(note) => {
-          localStorage.removeItem(queueKey(live!.session.id))
+          localStorage.removeItem(queueKey(sessionId))
           setSavedNote(note)
-          setView({ name: 'home' })
+          // Per §5: saving routes straight to the export screen.
+          setView({ name: 'export', sessionId, from: 'saved' })
           void refresh()
         }}
         onBackToCount={() => setView({ name: 'count' })}

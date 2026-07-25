@@ -57,3 +57,28 @@ export function formatMelbourneTime(ts: string | Date): string {
     hour12: false,
   }).format(toInstant(ts))
 }
+
+/** ISO 8601 with the Melbourne offset, e.g. "2026-07-24T19:02:00+10:00". For CSV. */
+export function formatMelbourneISO(ts: string | Date): string {
+  const instant = toInstant(ts)
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: MELBOURNE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(instant)
+  const p = Object.fromEntries(
+    parts.filter((x) => x.type !== 'literal').map((x) => [x.type, x.value]),
+  ) as Record<string, string>
+  const wallAsUtc = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second)
+  const offsetMin = Math.round((wallAsUtc - instant.getTime()) / 60_000)
+  const sign = offsetMin >= 0 ? '+' : '-'
+  const abs = Math.abs(offsetMin)
+  const hh = String(Math.floor(abs / 60)).padStart(2, '0')
+  const mm = String(abs % 60).padStart(2, '0')
+  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:${p.second}${sign}${hh}:${mm}`
+}

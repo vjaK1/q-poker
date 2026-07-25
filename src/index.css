@@ -457,6 +457,20 @@ button.row {
   padding-bottom: calc(72px + env(safe-area-inset-bottom));
 }
 
+/* export preview */
+
+.export-pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+  margin: 0;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+}
+
 /* audit trail */
 
 .audit-row--voided {

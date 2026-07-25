@@ -13,9 +13,11 @@ import { useBusy } from '../hooks/useBusy'
 export function SessionDetailScreen({
   sessionId,
   onBack,
+  onExport,
 }: {
   sessionId: string
   onBack: () => void
+  onExport: (sessionId: string) => void
 }) {
   const [detail, setDetail] = useState<SessionDetail | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -167,9 +169,12 @@ export function SessionDetailScreen({
       <p className="muted">
         {s.correctionsCount === 0
           ? 'No corrections'
-          : `${s.correctionsCount} correction${s.correctionsCount === 1 ? '' : 's'}`}{' '}
-        · export arrives in milestone 4
+          : `${s.correctionsCount} correction${s.correctionsCount === 1 ? '' : 's'}`}
       </p>
+
+      <button className="btn btn--primary" onClick={() => onExport(sessionId)}>
+        Export
+      </button>
 
       {error && <p className="notice notice--error">{error}</p>}
 
