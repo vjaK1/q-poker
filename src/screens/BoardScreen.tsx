@@ -7,6 +7,7 @@ import {
   type LeaderboardRow,
 } from '../lib/ledger'
 import { formatSignedMoney } from '../lib/money'
+import { NetBarChart } from '../components/NetBarChart'
 
 const WINDOWS: Array<{ key: BoardWindow; label: string }> = [
   { key: 'all', label: 'All-time' },
@@ -93,6 +94,13 @@ export function BoardScreen({ onOpenPlayer }: { onOpenPlayer: (playerId: string)
       {rows === null && !error && <p className="muted">Loading…</p>}
       {rows !== null && rows.length === 0 && (
         <p className="muted">No saved sessions in this window yet.</p>
+      )}
+
+      {rows !== null && rows.length > 0 && (
+        <div className="card">
+          <span className="muted">Net P/L</span>
+          <NetBarChart rows={rows} />
+        </div>
       )}
 
       {rows !== null && rows.length > 0 && (

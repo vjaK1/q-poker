@@ -529,6 +529,55 @@ button.row {
   font-variant-numeric: tabular-nums;
 }
 
+/* board net bar chart */
+
+.netbar-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-height: 24px;
+}
+
+.netbar-name {
+  width: 5.5rem;
+  flex-shrink: 0;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.netbar-track {
+  position: relative;
+  flex: 1;
+  height: 24px;
+}
+
+.netbar-axis {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--border);
+}
+
+.netbar-bar {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 10px;
+}
+
+.netbar-bar--pos {
+  background: var(--pos);
+  border-radius: 0 4px 4px 0;
+}
+
+.netbar-bar--neg {
+  background: var(--neg);
+  border-radius: 4px 0 0 4px;
+}
+
 /* export preview */
 
 .export-pre {
