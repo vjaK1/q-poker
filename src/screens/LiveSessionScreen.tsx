@@ -182,14 +182,10 @@ export function LiveSessionScreen({
               })
             }
           >
-            Count stacks now?
+            {seatedRows.length > 0 ? 'Count stacks now?' : 'Reconcile now?'}
           </button>
         ) : (
-          <button
-            className="btn"
-            disabled={busy || seatedRows.length === 0}
-            onClick={() => setConfirmEnd(true)}
-          >
+          <button className="btn" disabled={busy} onClick={() => setConfirmEnd(true)}>
             End session
           </button>
         )}
