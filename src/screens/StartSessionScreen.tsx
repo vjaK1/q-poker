@@ -8,7 +8,6 @@ import {
 } from '../lib/ledger'
 import { getSettings } from '../lib/settings'
 import { formatMoney } from '../lib/money'
-import { formatMelbourneTime } from '../lib/time'
 import { useBusy } from '../hooks/useBusy'
 import { AddPlayerSheet } from '../components/AddPlayerSheet'
 
@@ -99,10 +98,8 @@ export function StartSessionScreen({
                   {player.isGuest && <span className="row-sub">guest</span>}
                 </span>
                 {done ? (
-                  <span className="row-end">
-                    {formatMoney(done.buyInCents)} ·{' '}
-                    {done.firstBuyInAt ? formatMelbourneTime(done.firstBuyInAt) : ''}{' '}
-                    <span className="check">✓</span>
+                  <span className="row-end row-amount">
+                    {formatMoney(done.buyInCents)} <span className="check">✓</span>
                   </span>
                 ) : (
                   <span className="muted">{formatMoney(settings.defaultBuyInCents)}</span>

@@ -53,19 +53,19 @@ export function ReconcileScreen({
       </div>
 
       {hint.kind === 'balanced' ? (
-        <div className="banner banner--ok">Balanced — every dollar accounted for</div>
+        <div className="banner banner--ok">Balanced. Every dollar accounted for</div>
       ) : (
         <>
           <div className="banner banner--warn">Off by {formatMoney(s.discrepancyCents)}</div>
           {hint.kind === 'missed-rebuy' ? (
             <p className="muted">
               Exactly {hint.missedCount} buy-in{hint.missedCount === 1 ? '' : 's'} over. Likely an
-              unlogged rebuy — check whether the cash box holds{' '}
+              unlogged rebuy. Check whether the cash box holds{' '}
               {formatMoney(hint.boxShouldHoldCents)}.
             </p>
           ) : (
             <p className="muted">
-              Likely a miscount or chips off the table — recount the largest stacks.
+              Likely a miscount or chips off the table. Recount the largest stacks.
             </p>
           )}
         </>
@@ -91,7 +91,7 @@ export function ReconcileScreen({
           onClick={() =>
             void run(async () => {
               await saveSession(state.session.id)
-              onSaved('Session saved — balanced ✓')
+              onSaved('Session saved · balanced ✓')
             })
           }
         >
@@ -116,11 +116,11 @@ export function ReconcileScreen({
               onClick={() =>
                 void run(async () => {
                   await saveSession(state.session.id)
-                  onSaved(`Session saved — off by ${formatMoney(s.discrepancyCents)}`)
+                  onSaved(`Session saved · off by ${formatMoney(s.discrepancyCents)}`)
                 })
               }
             >
-              Confirm — save off by {formatMoney(s.discrepancyCents)}
+              Yes, save off by {formatMoney(s.discrepancyCents)}
             </button>
           ) : (
             <button className="btn" disabled={busy} onClick={() => setConfirmUnbalanced(true)}>
@@ -132,7 +132,7 @@ export function ReconcileScreen({
 
       {loggingRebuy && (
         <Sheet onClose={() => setLoggingRebuy(false)}>
-          <div className="sheet-title">Missed rebuy — who was it?</div>
+          <div className="sheet-title">Missed rebuy: who was it?</div>
           <div className="list">
             {s.players.map((p) => (
               <button

@@ -64,7 +64,7 @@ export function AddPlayerSheet({
         </div>
       )}
       {existing !== null && candidates.length === 0 && (
-        <p className="muted">No other players yet — create one below.</p>
+        <p className="muted">No other players yet. Create one below.</p>
       )}
 
       <form

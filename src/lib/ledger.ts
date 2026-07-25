@@ -195,7 +195,7 @@ export async function beginCounting(sessionId: string): Promise<Session> {
     .select()
   if (error) throw new Error(error.message)
   const rows = (data ?? []) as SessionRow[]
-  if (rows.length === 0) throw new Error('Session is not live — cannot start counting')
+  if (rows.length === 0) throw new Error('Session is not live, so counting cannot start')
   return toSession(rows[0])
 }
 
@@ -209,7 +209,7 @@ export async function saveSession(sessionId: string): Promise<Session> {
     .select()
   if (error) throw new Error(error.message)
   const rows = (data ?? []) as SessionRow[]
-  if (rows.length === 0) throw new Error('Session is not in counting state — cannot save')
+  if (rows.length === 0) throw new Error('Session is not in the counting state, so it cannot be saved')
   return toSession(rows[0])
 }
 

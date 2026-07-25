@@ -220,15 +220,15 @@ function SetupScreen() {
   return (
     <div className="screen screen--center">
       <div className="card">
-        <h1>Q.Poker — setup needed</h1>
+        <h1>Q.Poker setup</h1>
         <p>
           Supabase isn't configured yet. Open <code>.env.local</code> and replace the
           placeholders:
         </p>
         <p className="mono">
-          VITE_SUPABASE_URL — Supabase dashboard → Project Settings → Data API → Project URL
+          VITE_SUPABASE_URL: Supabase dashboard → Project Settings → Data API → Project URL
           <br />
-          VITE_SUPABASE_ANON_KEY — Project Settings → API Keys → anon public
+          VITE_SUPABASE_ANON_KEY: Project Settings → API Keys → anon public
         </p>
         <p className="muted">Then restart the dev server.</p>
       </div>

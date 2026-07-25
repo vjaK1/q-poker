@@ -242,6 +242,9 @@ button.row {
 .row-main {
   flex: 1;
   min-width: 0;
+  display: grid;
+  gap: 0.125rem;
+  justify-items: start;
 }
 
 .row-title {
@@ -251,7 +254,12 @@ button.row {
 .row-sub {
   color: var(--muted);
   font-size: 0.8125rem;
-  margin-top: 0.125rem;
+}
+
+.row-amount {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .row-end {

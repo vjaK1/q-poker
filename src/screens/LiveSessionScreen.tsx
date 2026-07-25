@@ -48,14 +48,6 @@ export function LiveSessionScreen({
   const seatedRows = state.summary.players.filter((p) => seated.has(p.playerId))
   const away = state.summary.players.filter((p) => !seated.has(p.playerId))
 
-  const buyInTimes = (playerId: string) =>
-    state.events
-      .filter(
-        (e) => e.playerId === playerId && !e.voided && (e.type === 'buy_in' || e.type === 'rebuy'),
-      )
-      .map((e) => formatMelbourneTime(e.createdAt))
-      .join(', ')
-
   return (
     <div className="screen">
       <header className="app-header">
@@ -78,9 +70,7 @@ export function LiveSessionScreen({
           <div key={p.playerId} className="row">
             <span className="row-main">
               <span className="row-title">{p.name ?? p.playerId}</span>
-              <span className="row-sub">
-                in {formatMoney(p.buyInCents)} · {buyInTimes(p.playerId)}
-              </span>
+              <span className="row-amount">In {formatMoney(p.buyInCents)}</span>
             </span>
             <button
               className="btn btn--small btn--primary"
@@ -102,10 +92,7 @@ export function LiveSessionScreen({
             <div key={p.playerId} className="row row--dim">
               <span className="row-main">
                 <span className="row-title">{p.name ?? p.playerId}</span>
-                <span className="row-sub">
-                  cashed out {formatMoney(p.cashOutCents)}
-                  {p.lastCashOutAt ? ` · ${formatMelbourneTime(p.lastCashOutAt)}` : ''}
-                </span>
+                <span className="row-amount">Cashed out {formatMoney(p.cashOutCents)}</span>
               </span>
               <button
                 className="btn btn--small"
@@ -192,7 +179,7 @@ export function LiveSessionScreen({
 
       {pickingCashOut && (
         <Sheet onClose={() => setPickingCashOut(false)}>
-          <div className="sheet-title">Cash out — who?</div>
+          <div className="sheet-title">Who's cashing out?</div>
           <div className="list">
             {seatedRows.map((p) => (
               <button

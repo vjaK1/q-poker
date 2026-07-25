@@ -96,7 +96,7 @@ export function CountQueueScreen({
 
       {allCounted && (
         <button className="btn btn--primary" onClick={onReconcile}>
-          Everyone counted — reconcile →
+          Reconcile →
         </button>
       )}
     </div>
