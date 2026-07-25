@@ -21,7 +21,7 @@ export function HomeScreen({
   const now = useNow(30_000)
 
   return (
-    <div className="screen">
+    <div className="screen screen--tabbed">
       <header className="app-header">
         <h1>Q.Poker</h1>
         <button className="btn btn--inline" onClick={onSignOut}>

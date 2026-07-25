@@ -8,6 +8,9 @@ import { LiveSessionScreen } from './screens/LiveSessionScreen'
 import { CashOutScreen } from './screens/CashOutScreen'
 import { CountQueueScreen } from './screens/CountQueueScreen'
 import { ReconcileScreen } from './screens/ReconcileScreen'
+import { SessionsScreen } from './screens/SessionsScreen'
+import { SessionDetailScreen } from './screens/SessionDetailScreen'
+import { TabBar } from './components/TabBar'
 
 export default function App() {
   return isSupabaseConfigured ? <AuthedApp /> : <SetupScreen />
@@ -51,6 +54,8 @@ type View =
   | { name: 'cashout'; playerId: string; origin: 'live' | 'count'; recountsTxId?: string }
   | { name: 'count' }
   | { name: 'reconcile' }
+  | { name: 'sessions' }
+  | { name: 'sessionDetail'; sessionId: string }
 
 // The count queue (who was seated when "End session" was tapped) survives an
 // app reload via localStorage; the fallback is whoever is seated now.
@@ -104,34 +109,71 @@ function SessionApp({ email }: { email: string | null }) {
     )
   }
 
-  // Keep the view consistent with reality: no session → home/start only;
-  // counting sessions never show the live screen and vice versa.
+  // Keep the session-flow views consistent with reality: no session → home;
+  // counting sessions never show the live screen and vice versa. The Sessions
+  // tab and detail views are independent of the live session.
+  const inSessionFlow =
+    view.name === 'start' ||
+    view.name === 'live' ||
+    view.name === 'cashout' ||
+    view.name === 'count' ||
+    view.name === 'reconcile'
   let effective: View = view
-  if (live === null) {
-    if (view.name !== 'home' && view.name !== 'start') effective = { name: 'home' }
-  } else if (live.session.status === 'counting') {
-    if (view.name === 'live' || view.name === 'start') effective = { name: 'count' }
-  } else if (view.name === 'count' || view.name === 'reconcile') {
-    effective = { name: 'live' }
+  if (inSessionFlow) {
+    if (live === null) {
+      if (view.name !== 'start') effective = { name: 'home' }
+    } else if (live.session.status === 'counting') {
+      if (view.name === 'live' || view.name === 'start') effective = { name: 'count' }
+    } else if (view.name === 'count' || view.name === 'reconcile') {
+      effective = { name: 'live' }
+    }
   }
 
   const goHome = () => setView({ name: 'home' })
+  const tabBar = (active: 'home' | 'sessions') => (
+    <TabBar
+      active={active}
+      onHome={goHome}
+      onSessions={() => setView({ name: 'sessions' })}
+    />
+  )
 
   switch (effective.name) {
     case 'home':
       return (
-        <HomeScreen
-          live={live}
-          email={email}
-          savedNote={savedNote}
-          onStart={() => {
-            setSavedNote(null)
-            setView({ name: 'start' })
-          }}
-          onResume={() =>
-            setView(live?.session.status === 'counting' ? { name: 'count' } : { name: 'live' })
-          }
-          onSignOut={() => void signOut()}
+        <>
+          <HomeScreen
+            live={live}
+            email={email}
+            savedNote={savedNote}
+            onStart={() => {
+              setSavedNote(null)
+              setView({ name: 'start' })
+            }}
+            onResume={() =>
+              setView(live?.session.status === 'counting' ? { name: 'count' } : { name: 'live' })
+            }
+            onSignOut={() => void signOut()}
+          />
+          {tabBar('home')}
+        </>
+      )
+
+    case 'sessions':
+      return (
+        <>
+          <SessionsScreen
+            onOpen={(sessionId) => setView({ name: 'sessionDetail', sessionId })}
+          />
+          {tabBar('sessions')}
+        </>
+      )
+
+    case 'sessionDetail':
+      return (
+        <SessionDetailScreen
+          sessionId={effective.sessionId}
+          onBack={() => setView({ name: 'sessions' })}
         />
       )
 

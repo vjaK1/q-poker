@@ -372,6 +372,64 @@ export async function getLiveSessionState(): Promise<LiveSessionState | null> {
   }
 }
 
+/** One line per saved session for the Sessions tab list. */
+export interface SessionOverviewRow {
+  session: Session
+  playerCount: number
+  buyInsCents: number
+  discrepancyCents: number
+  balanced: boolean
+}
+
+export async function getSessionsOverview(): Promise<SessionOverviewRow[]> {
+  const [sessions, txsRes] = await Promise.all([
+    listSessions(),
+    db().from('transactions').select('*'),
+  ])
+  const txs = unwrap<TxRow[]>(txsRes).map(toTx)
+  const bySession = new Map<string, Tx[]>()
+  for (const t of txs) {
+    const list = bySession.get(t.sessionId) ?? []
+    list.push(t)
+    bySession.set(t.sessionId, list)
+  }
+  return sessions
+    .filter((s) => s.status === 'saved')
+    .map((session) => {
+      const summary = summarizeSession(session, bySession.get(session.id) ?? [])
+      return {
+        session,
+        playerCount: summary.players.length,
+        buyInsCents: summary.buyInsCents,
+        discrepancyCents: summary.discrepancyCents,
+        balanced: summary.balanced,
+      }
+    })
+}
+
+/** Everything the session detail screen needs: summary, audit events, names. */
+export interface SessionDetail {
+  session: Session
+  summary: SessionSummary
+  events: LedgerEvent[]
+  players: Player[]
+}
+
+export async function getSessionDetail(sessionId: string): Promise<SessionDetail> {
+  const [session, txs, players] = await Promise.all([
+    getSession(sessionId),
+    fetchSessionTxs(sessionId),
+    listPlayers(true),
+  ])
+  const playersById = new Map(players.map((p) => [p.id, p]))
+  return {
+    session,
+    summary: summarizeSession(session, txs, playersById),
+    events: buildEvents(txs),
+    players,
+  }
+}
+
 /** Quick-start roster: the previous saved session's players, in seat order. */
 export async function getLastSavedRoster(): Promise<Player[]> {
   const { data, error } = await db()

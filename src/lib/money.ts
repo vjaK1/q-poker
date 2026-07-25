@@ -25,6 +25,12 @@ export function formatMoney(cents: number): string {
   return `${sign}$${centsToDollars(Math.abs(cents))}`
 }
 
+/** Explicit sign for ledger displays: "+$10.00", "-$4.60", "$0.00". */
+export function formatSignedMoney(cents: number): string {
+  if (cents === 0) return '$0.00'
+  return cents > 0 ? `+${formatMoney(cents)}` : formatMoney(cents)
+}
+
 /** "10", "10.5", "10.50", "$10", "-4.60" → integer cents. Throws on anything else. */
 export function dollarsToCents(input: string): number {
   const m = /^(-?)\$?(\d+)(?:\.(\d{1,2}))?$/.exec(input.trim().replace(/^\$-/, '-$'))

@@ -422,3 +422,48 @@ button.row {
   color: var(--pos);
   font-weight: 700;
 }
+
+/* bottom tab bar */
+
+.tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 5;
+}
+
+.tab {
+  flex: 1;
+  min-height: 52px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.9375rem;
+  cursor: pointer;
+}
+
+.tab--active {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.screen--tabbed {
+  padding-bottom: calc(72px + env(safe-area-inset-bottom));
+}
+
+/* audit trail */
+
+.audit-row--voided {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+
+.audit-row--correction .row-title {
+  color: var(--warn);
+}

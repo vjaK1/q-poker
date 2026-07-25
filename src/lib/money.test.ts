@@ -5,6 +5,7 @@ import {
   denominationsTotalCents,
   dollarsToCents,
   formatMoney,
+  formatSignedMoney,
 } from './money'
 
 describe('centsToDollars', () => {
@@ -28,6 +29,14 @@ describe('formatMoney', () => {
     expect(formatMoney(4470)).toBe('$44.70')
     expect(formatMoney(-460)).toBe('-$4.60')
     expect(formatMoney(0)).toBe('$0.00')
+  })
+})
+
+describe('formatSignedMoney', () => {
+  it('shows explicit plus, bare zero, and minus', () => {
+    expect(formatSignedMoney(1000)).toBe('+$10.00')
+    expect(formatSignedMoney(-460)).toBe('-$4.60')
+    expect(formatSignedMoney(0)).toBe('$0.00')
   })
 })
 
