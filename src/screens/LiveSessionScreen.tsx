@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import {
   addBuyIn,
+  addCorrection,
   addRebuy,
   beginCounting,
   seatedPlayerIds,
+  type LedgerEvent,
   type LiveSessionState,
   type Player,
   type PlayerSessionSummary,
@@ -42,11 +44,24 @@ export function LiveSessionScreen({
   const [rebuyFor, setRebuyFor] = useState<PlayerSessionSummary | null>(null)
   const [pickingCashOut, setPickingCashOut] = useState(false)
   const [confirmEnd, setConfirmEnd] = useState(false)
+  const [confirmUndo, setConfirmUndo] = useState(false)
   const [adding, setAdding] = useState(false)
 
   const seated = new Set(seatedPlayerIds(state.events))
   const seatedRows = state.summary.players.filter((p) => seated.has(p.playerId))
   const away = state.summary.players.filter((p) => !seated.has(p.playerId))
+
+  // Undo = insert a correction voiding the most recent entry. Fat fingers
+  // happen; the ledger stays append-only either way.
+  const lastEntry = [...state.events]
+    .reverse()
+    .find((e) => !e.voided && e.type !== 'correction')
+  const nameOf = (playerId: string) =>
+    state.players.find((p) => p.id === playerId)?.name ?? 'Player'
+  const describeEntry = (e: LedgerEvent) => {
+    const kind = e.type === 'buy_in' ? 'buy-in' : e.type === 'rebuy' ? 'rebuy' : 'cash-out'
+    return `${nameOf(e.playerId)} ${kind} ${formatMoney(e.amountCents)}`
+  }
 
   return (
     <div className="screen">
@@ -70,7 +85,7 @@ export function LiveSessionScreen({
           <div key={p.playerId} className="row">
             <span className="row-main">
               <span className="row-title">{p.name ?? p.playerId}</span>
-              <span className="row-amount">In {formatMoney(p.buyInCents)}</span>
+              <span className="row-amount">In for {formatMoney(p.buyInCents)}</span>
             </span>
             <button
               className="btn btn--small btn--primary"
@@ -110,6 +125,37 @@ export function LiveSessionScreen({
           ))}
         </div>
       )}
+
+      {lastEntry &&
+        (confirmUndo ? (
+          <div className="btn-row">
+            <button
+              className="btn btn--warn"
+              disabled={busy}
+              onClick={() =>
+                void run(async () => {
+                  await addCorrection({
+                    sessionId: state.session.id,
+                    playerId: lastEntry.playerId,
+                    correctsTransactionId: lastEntry.id,
+                    note: 'Undo',
+                  })
+                  await refresh()
+                  setConfirmUndo(false)
+                })
+              }
+            >
+              Yes, undo {describeEntry(lastEntry)}
+            </button>
+            <button className="btn" disabled={busy} onClick={() => setConfirmUndo(false)}>
+              Keep it
+            </button>
+          </div>
+        ) : (
+          <button className="btn" disabled={busy} onClick={() => setConfirmUndo(true)}>
+            Undo last entry: {describeEntry(lastEntry)}
+          </button>
+        ))}
 
       {error && <p className="notice notice--error">{error}</p>}
 
