@@ -206,6 +206,62 @@ export function summarizeSession(
   }
 }
 
+/**
+ * Who is still seated: players with a non-voided buy_in more recent than any
+ * non-voided cash_out. A mid-session cash-out removes a player; a fresh buy-in
+ * (re-entry per §4.3) re-seats them. Rebuys top up a seated stack but never
+ * seat anyone — a late-logged "missed rebuy" for a player who already cashed
+ * out must not put them back in the count queue. Order = first appearance.
+ */
+export function seatedPlayerIds(events: LedgerEvent[]): string[] {
+  const order: string[] = []
+  const lastBuyIn = new Map<string, number>()
+  const lastCashOut = new Map<string, number>()
+  events.forEach((e, i) => {
+    if (e.voided || e.type === 'correction' || e.type === 'rebuy') return
+    if (!order.includes(e.playerId)) order.push(e.playerId)
+    if (e.type === 'buy_in') lastBuyIn.set(e.playerId, i)
+    else lastCashOut.set(e.playerId, i)
+  })
+  return order.filter((id) => {
+    const buyIn = lastBuyIn.get(id)
+    if (buyIn === undefined) return false
+    const cashOut = lastCashOut.get(id)
+    return cashOut === undefined || buyIn > cashOut
+  })
+}
+
+export type ReconcileHint =
+  | { kind: 'balanced' }
+  | { kind: 'missed-rebuy'; missedCount: number; boxShouldHoldCents: number }
+  | { kind: 'miscount' }
+
+/**
+ * Pattern-matched reconcile hint (§4.6). A positive discrepancy that is an
+ * exact multiple of the default buy-in smells like unlogged rebuys; anything
+ * else smells like a miscount. boxShouldHold = what the cash box must contain
+ * in total collected money if the missed rebuy(s) really happened.
+ */
+export function reconcileHint(
+  discrepancyCents: number,
+  defaultBuyInCents: number,
+  buyInsCents: number,
+): ReconcileHint {
+  if (discrepancyCents === 0) return { kind: 'balanced' }
+  if (
+    discrepancyCents > 0 &&
+    defaultBuyInCents > 0 &&
+    discrepancyCents % defaultBuyInCents === 0
+  ) {
+    return {
+      kind: 'missed-rebuy',
+      missedCount: discrepancyCents / defaultBuyInCents,
+      boxShouldHoldCents: buyInsCents + discrepancyCents,
+    }
+  }
+  return { kind: 'miscount' }
+}
+
 /** Consecutive most-recent wins (+n) or losses (−n); $0 breaks any streak. */
 export function computeStreak(chronologicalNets: number[]): number {
   let streak = 0

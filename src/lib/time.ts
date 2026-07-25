@@ -40,6 +40,14 @@ export function sessionDisplayName(startedAt: string | Date): string {
   return `${weekday} ${d} ${MONTHS[m - 1]}`
 }
 
+/** Elapsed duration for the live timer, e.g. "2h 14m" or "38m". */
+export function formatElapsed(startedAt: string | Date, nowMs: number): string {
+  const totalMinutes = Math.max(0, Math.floor((nowMs - toInstant(startedAt).getTime()) / 60_000))
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`
+}
+
 /** Wall-clock time in Melbourne, e.g. "19:02". No logical-day shift — real time. */
 export function formatMelbourneTime(ts: string | Date): string {
   return new Intl.DateTimeFormat('en-AU', {

@@ -4,6 +4,8 @@ import {
   computeLeaderboard,
   computeStreak,
   computeVoidedIds,
+  reconcileHint,
+  seatedPlayerIds,
   summarizeSession,
 } from './derive'
 import type { Player, Session, SessionStatus, Tx, TxType } from './types'
@@ -222,6 +224,66 @@ describe('mid-session cash-out and re-entry (no special casing)', () => {
   it('seat time spans first buy-in to LAST cash-out', () => {
     const p = summarizeSession(s, txs).players[0]
     expect(p.seatMs).toBe(180 * 60_000)
+  })
+})
+
+// ---------------------------- seated players -------------------------------
+
+describe('seatedPlayerIds', () => {
+  const base = '2026-07-24T09:00:00Z'
+
+  it('mid-session cash-out unseats; a fresh buy-in re-seats', () => {
+    const txs = [
+      tx({ sessionId: 's1', playerId: 'p1', type: 'buy_in', amountCents: 1000, createdAt: at(base, 0) }),
+      tx({ sessionId: 's1', playerId: 'p2', type: 'buy_in', amountCents: 1000, createdAt: at(base, 1) }),
+      tx({ sessionId: 's1', playerId: 'p1', type: 'cash_out', amountCents: 500, createdAt: at(base, 60) }),
+    ]
+    expect(seatedPlayerIds(buildEvents(txs))).toEqual(['p2'])
+
+    txs.push(
+      tx({ sessionId: 's1', playerId: 'p1', type: 'buy_in', amountCents: 1000, createdAt: at(base, 90) }),
+    )
+    expect(seatedPlayerIds(buildEvents(txs))).toEqual(['p1', 'p2'])
+  })
+
+  it('a rebuy logged after the cash-out (missed rebuy) does not re-seat', () => {
+    const txs = [
+      tx({ sessionId: 's1', playerId: 'p1', type: 'buy_in', amountCents: 1000, createdAt: at(base, 0) }),
+      tx({ sessionId: 's1', playerId: 'p1', type: 'cash_out', amountCents: 2000, createdAt: at(base, 240) }),
+      tx({ sessionId: 's1', playerId: 'p1', type: 'rebuy', amountCents: 1000, createdAt: at(base, 250) }),
+    ]
+    expect(seatedPlayerIds(buildEvents(txs))).toEqual([])
+  })
+
+  it('a voided cash-out leaves the player seated', () => {
+    const b = tx({ sessionId: 's1', playerId: 'p1', type: 'buy_in', amountCents: 1000, createdAt: at(base, 0) })
+    const out = tx({ sessionId: 's1', playerId: 'p1', type: 'cash_out', amountCents: 500, createdAt: at(base, 60) })
+    const fix = tx({ sessionId: 's1', playerId: 'p1', type: 'correction', amountCents: 0, createdAt: at(base, 61), correctsTransactionId: out.id })
+    expect(seatedPlayerIds(buildEvents([b, out, fix]))).toEqual(['p1'])
+  })
+})
+
+// ---------------------------- reconcile hints ------------------------------
+
+describe('reconcileHint', () => {
+  it('zero delta is balanced', () => {
+    expect(reconcileHint(0, 1000, 30000)).toEqual({ kind: 'balanced' })
+  })
+  it('positive multiples of the default buy-in suggest missed rebuys', () => {
+    expect(reconcileHint(1000, 1000, 30000)).toEqual({
+      kind: 'missed-rebuy',
+      missedCount: 1,
+      boxShouldHoldCents: 31000,
+    })
+    expect(reconcileHint(3000, 1000, 30000)).toEqual({
+      kind: 'missed-rebuy',
+      missedCount: 3,
+      boxShouldHoldCents: 33000,
+    })
+  })
+  it('anything else suggests a miscount', () => {
+    expect(reconcileHint(500, 1000, 30000)).toEqual({ kind: 'miscount' })
+    expect(reconcileHint(-1000, 1000, 30000)).toEqual({ kind: 'miscount' })
   })
 })
 

@@ -36,8 +36,8 @@ export type {
   TxType,
 }
 export type { LeaderboardRow, LedgerEvent, SessionSummary }
-export type { PlayerSessionSummary } from './derive'
-export { RATE_STAT_MIN_SESSIONS } from './derive'
+export type { PlayerSessionSummary, ReconcileHint } from './derive'
+export { RATE_STAT_MIN_SESSIONS, reconcileHint, seatedPlayerIds } from './derive'
 
 const db = () => getSupabase()
 
@@ -330,6 +330,47 @@ export async function getSessionSummary(sessionId: string): Promise<SessionSumma
     listPlayers(true),
   ])
   return summarizeSession(session, txs, new Map(players.map((p) => [p.id, p])))
+}
+
+/** Everything the live screens need in one fetch: session, audit events, summary. */
+export interface LiveSessionState {
+  session: Session
+  events: LedgerEvent[]
+  summary: SessionSummary
+  /** All players (incl. archived), for resolving names anywhere in the flow. */
+  players: Player[]
+}
+
+export async function getLiveSessionState(): Promise<LiveSessionState | null> {
+  const session = await getLiveSession()
+  if (!session) return null
+  const [txs, players] = await Promise.all([fetchSessionTxs(session.id), listPlayers(true)])
+  const playersById = new Map(players.map((p) => [p.id, p]))
+  return {
+    session,
+    events: buildEvents(txs),
+    summary: summarizeSession(session, txs, playersById),
+    players,
+  }
+}
+
+/** Quick-start roster: the previous saved session's players, in seat order. */
+export async function getLastSavedRoster(): Promise<Player[]> {
+  const { data, error } = await db()
+    .from('sessions')
+    .select('*')
+    .eq('status', 'saved')
+    .order('started_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  if (!data) return []
+  const session = toSession(data as SessionRow)
+  const [txs, players] = await Promise.all([fetchSessionTxs(session.id), listPlayers(false)])
+  const byId = new Map(players.map((p) => [p.id, p]))
+  return summarizeSession(session, txs)
+    .players.map((ps) => byId.get(ps.playerId))
+    .filter((p): p is Player => p !== undefined)
 }
 
 export async function getLeaderboard(opts?: {

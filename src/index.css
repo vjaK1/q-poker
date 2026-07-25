@@ -16,6 +16,7 @@
   --pos: #17803d;
   --neg: #d92d20;
   --warn: #b54708;
+  --sheet-scrim: rgba(22, 24, 28, 0.45);
 }
 
 [data-theme='dark'] {
@@ -30,6 +31,7 @@
   --pos: #3dcc74;
   --neg: #ff6b5e;
   --warn: #f0a53f;
+  --sheet-scrim: rgba(0, 0, 0, 0.6);
 }
 
 /* --------------------------------- base ---------------------------------- */
@@ -173,4 +175,236 @@ h1 {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.8125rem;
   overflow-wrap: anywhere;
+}
+
+.pos {
+  color: var(--pos);
+}
+
+.neg {
+  color: var(--neg);
+}
+
+/* ------------------------- session-flow components ------------------------ */
+
+.hero {
+  text-align: center;
+  padding: 0.5rem 0;
+}
+
+.hero-money {
+  font-size: 2.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.hero-sub {
+  color: var(--muted);
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.list {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 56px;
+  padding: 0.5rem 1rem;
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  color: var(--text);
+  text-align: left;
+  font: inherit;
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+button.row {
+  cursor: pointer;
+}
+
+.row--dim {
+  color: var(--muted);
+}
+
+.row-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.row-title {
+  font-weight: 600;
+}
+
+.row-sub {
+  color: var(--muted);
+  font-size: 0.8125rem;
+  margin-top: 0.125rem;
+}
+
+.row-end {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.banner {
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+}
+
+.banner--ok {
+  color: var(--pos);
+  border-color: var(--pos);
+}
+
+.banner--warn {
+  color: var(--warn);
+  border-color: var(--warn);
+}
+
+.btn--warn {
+  border-color: var(--warn);
+  color: var(--warn);
+}
+
+.btn--small {
+  min-height: 44px;
+  width: auto;
+  padding: 0 0.875rem;
+  flex-shrink: 0;
+}
+
+.screen-title {
+  flex: 1;
+  text-align: center;
+  font-weight: 700;
+}
+
+.timer {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+/* bottom sheet */
+
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--sheet-scrim);
+  display: flex;
+  align-items: flex-end;
+  z-index: 10;
+}
+
+.sheet {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-radius: 16px 16px 0 0;
+  width: 100%;
+  max-width: 30rem;
+  margin: 0 auto;
+  padding: 1.25rem 1rem calc(1.25rem + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  max-height: 85dvh;
+  overflow-y: auto;
+}
+
+.sheet-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+/* cash-out steppers */
+
+.stepper-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.stepper-row:last-child {
+  border-bottom: 0;
+}
+
+.stepper-label {
+  width: 4.25rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 1;
+  justify-content: center;
+}
+
+.stepper button {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.stepper button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.stepper-count {
+  min-width: 2.5rem;
+  text-align: center;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.stepper-subtotal {
+  width: 4.5rem;
+  text-align: right;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.footer-stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.btn-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.btn-row > .btn {
+  flex: 1;
+}
+
+.check {
+  color: var(--pos);
+  font-weight: 700;
 }
