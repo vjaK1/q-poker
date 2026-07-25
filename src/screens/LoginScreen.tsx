@@ -1,10 +1,11 @@
 import { useState, type FormEvent } from 'react'
-import { signInWithMagicLink } from '../lib/auth'
+import { signInWithMagicLink, verifyEmailOtp } from '../lib/auth'
 
 type Phase = 'idle' | 'sending' | 'sent'
 
 export function LoginScreen() {
   const [email, setEmail] = useState('')
+  const [code, setCode] = useState('')
   const [phase, setPhase] = useState<Phase>('idle')
   const [error, setError] = useState<string | null>(null)
 
@@ -27,8 +28,40 @@ export function LoginScreen() {
         <div className="card">
           <h1>Check your email</h1>
           <p>
-            Magic link sent to <strong>{email}</strong>. Open it on this device to sign in.
+            Magic link sent to <strong>{email}</strong>. Open it on this device, or type the
+            6-digit code from the same email:
           </p>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              setError(null)
+              verifyEmailOtp(email, code).catch((err: unknown) =>
+                setError(err instanceof Error ? err.message : String(err)),
+              )
+            }}
+          >
+            <div className="field">
+              <label htmlFor="otp-code">Code</label>
+              <input
+                id="otp-code"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]*"
+                placeholder="123456"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+              />
+            </div>
+            <button
+              className="btn btn--primary"
+              type="submit"
+              disabled={code.trim().length < 6}
+              style={{ marginTop: '0.75rem' }}
+            >
+              Sign in with code
+            </button>
+          </form>
+          {error && <p className="notice notice--error">{error}</p>}
           <button className="btn" onClick={() => setPhase('idle')}>
             Use a different email
           </button>

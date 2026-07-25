@@ -3,6 +3,7 @@ import { addCashOut, addCorrection, type Denominations, type LiveSessionState } 
 import { getSettings } from '../lib/settings'
 import { centsToDollars, formatMoney } from '../lib/money'
 import { useBusy } from '../hooks/useBusy'
+import { useWakeLock } from '../hooks/useWakeLock'
 
 /**
  * Cash-out (§4.4): denomination steppers → auto total → awaiting 2nd count →
@@ -27,6 +28,7 @@ export function CashOutScreen({
   onCancel: () => void
 }) {
   const settings = getSettings()
+  useWakeLock()
   const [counts, setCounts] = useState<Record<number, number>>({})
   const [awaitingSecond, setAwaitingSecond] = useState(false)
   const { busy, error, run } = useBusy()

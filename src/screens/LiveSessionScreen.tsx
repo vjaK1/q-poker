@@ -16,6 +16,7 @@ import { formatMoney } from '../lib/money'
 import { formatElapsed, formatMelbourneTime } from '../lib/time'
 import { useBusy } from '../hooks/useBusy'
 import { useNow } from '../hooks/useNow'
+import { useWakeLock } from '../hooks/useWakeLock'
 import { Sheet } from '../components/Sheet'
 import { AddPlayerSheet } from '../components/AddPlayerSheet'
 
@@ -41,6 +42,7 @@ export function LiveSessionScreen({
 }) {
   const settings = getSettings()
   const now = useNow(1000)
+  useWakeLock()
   const { busy, error, run } = useBusy()
   const [rebuyFor, setRebuyFor] = useState<PlayerSessionSummary | null>(null)
   const [pickingCashOut, setPickingCashOut] = useState(false)
@@ -237,6 +239,7 @@ export function LiveSessionScreen({
             onClick={() =>
               void run(async () => {
                 await addRebuy(state.session.id, rebuyFor.playerId, settings.defaultBuyInCents)
+                navigator.vibrate?.(50) // haptic confirm; silently absent on iOS
                 await refresh()
                 setRebuyFor(null)
               })

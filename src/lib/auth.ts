@@ -22,6 +22,21 @@ export async function signInWithMagicLink(email: string): Promise<void> {
   if (error) throw new Error(error.message)
 }
 
+/**
+ * Alternative to clicking the link: the same email carries a 6-digit code
+ * (once {{ .Token }} is in the Supabase email template). Typing it here signs
+ * in THIS context — essential for the installed PWA, where mail links open
+ * Safari instead of the app.
+ */
+export async function verifyEmailOtp(email: string, code: string): Promise<void> {
+  const { error } = await getSupabase().auth.verifyOtp({
+    email,
+    token: code.trim(),
+    type: 'email',
+  })
+  if (error) throw new Error(error.message)
+}
+
 export async function signOut(): Promise<void> {
   const { error } = await getSupabase().auth.signOut()
   if (error) throw new Error(error.message)

@@ -1,5 +1,6 @@
 import { seatedPlayerIds, type LiveSessionState } from '../lib/ledger'
 import { formatMoney } from '../lib/money'
+import { useWakeLock } from '../hooks/useWakeLock'
 
 /**
  * Count queue (§4.5): work through every player still seated when the session
@@ -22,6 +23,7 @@ export function CountQueueScreen({
   onReconcile: () => void
   onHome: () => void
 }) {
+  useWakeLock()
   const seated = new Set(seatedPlayerIds(state.events))
 
   const members = queueIds.map((id) => {

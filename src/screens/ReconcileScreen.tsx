@@ -3,6 +3,7 @@ import { addRebuy, reconcileHint, saveSession, type LiveSessionState } from '../
 import { getSettings } from '../lib/settings'
 import { formatMoney } from '../lib/money'
 import { useBusy } from '../hooks/useBusy'
+import { useWakeLock } from '../hooks/useWakeLock'
 import { Sheet } from '../components/Sheet'
 
 /**
@@ -22,6 +23,7 @@ export function ReconcileScreen({
   onBackToCount: () => void
 }) {
   const settings = getSettings()
+  useWakeLock()
   const { busy, error, run } = useBusy()
   const [confirmUnbalanced, setConfirmUnbalanced] = useState(false)
   const [loggingRebuy, setLoggingRebuy] = useState(false)

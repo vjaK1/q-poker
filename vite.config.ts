@@ -14,11 +14,14 @@ export default defineConfig({
         description: 'Home-game poker session tracker',
         display: 'standalone',
         start_url: '/',
-        // Manifest colours must be literal hex by format; keep in sync with the
-        // dark-theme tokens in src/index.css. Real icons land in milestone 6.
-        theme_color: '#101114',
-        background_color: '#101114',
-        icons: [{ src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }],
+        // Manifest colours must be literal hex by format; matched to the
+        // logo's own background so the splash blends into the icon.
+        theme_color: '#030209',
+        background_color: '#030209',
+        icons: [
+          { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+        ],
       },
     }),
   ],

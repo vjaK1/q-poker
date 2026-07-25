@@ -10,27 +10,25 @@ import {
 } from '../lib/time'
 import { useNow } from '../hooks/useNow'
 import { Sparkline } from '../components/Sparkline'
-import { SettingsSheet } from '../components/SettingsSheet'
 
 /** Home dashboard (§4.1): idle and live states. */
 export function HomeScreen({
   live,
-  email,
   savedNote,
   onStart,
   onResume,
   onBoard,
+  onSettings,
 }: {
   live: LiveSessionState | null
-  email: string | null
   savedNote: string | null
   onStart: () => void
   onResume: () => void
   onBoard: () => void
+  onSettings: () => void
 }) {
   const now = useNow(30_000)
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [myPlayerId, setMyPlayerId] = useState(getSettings().myPlayerId)
+  const [myPlayerId] = useState(getSettings().myPlayerId)
   const [data, setData] = useState<HomeData | null>(null)
 
   useEffect(() => {
@@ -54,11 +52,7 @@ export function HomeScreen({
           <h1>Home</h1>
           <span className="muted">{melbourneDayName(new Date(now))}</span>
         </span>
-        <button
-          className="btn btn--inline"
-          aria-label="Settings"
-          onClick={() => setSettingsOpen(true)}
-        >
+        <button className="btn btn--inline" aria-label="Settings" onClick={onSettings}>
           ⚙
         </button>
       </header>
@@ -87,7 +81,7 @@ export function HomeScreen({
         {myPlayerId === null ? (
           <>
             <p>Pick who you are to see your lifetime numbers.</p>
-            <button className="btn" onClick={() => setSettingsOpen(true)}>
+            <button className="btn" onClick={onSettings}>
               This is me…
             </button>
           </>
@@ -145,14 +139,6 @@ export function HomeScreen({
         <button className="btn btn--primary" onClick={onStart}>
           Start session
         </button>
-      )}
-
-      {settingsOpen && (
-        <SettingsSheet
-          email={email}
-          onClose={() => setSettingsOpen(false)}
-          onChanged={() => setMyPlayerId(getSettings().myPlayerId)}
-        />
       )}
     </div>
   )

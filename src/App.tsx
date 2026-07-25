@@ -13,6 +13,7 @@ import { SessionDetailScreen } from './screens/SessionDetailScreen'
 import { ExportScreen } from './screens/ExportScreen'
 import { BoardScreen } from './screens/BoardScreen'
 import { PlayerProfileScreen } from './screens/PlayerProfileScreen'
+import { SettingsScreen } from './screens/SettingsScreen'
 import { TabBar } from './components/TabBar'
 
 export default function App() {
@@ -62,6 +63,7 @@ type View =
   | { name: 'export'; sessionId: string; from: 'detail' | 'saved' }
   | { name: 'board' }
   | { name: 'playerProfile'; playerId: string }
+  | { name: 'settings' }
 
 // The count queue (who was seated when "End session" was tapped) survives an
 // app reload via localStorage; the fallback is whoever is seated now.
@@ -151,7 +153,6 @@ function SessionApp({ email }: { email: string | null }) {
         <>
           <HomeScreen
             live={live}
-            email={email}
             savedNote={savedNote}
             onStart={() => {
               setSavedNote(null)
@@ -161,6 +162,7 @@ function SessionApp({ email }: { email: string | null }) {
               setView(live?.session.status === 'counting' ? { name: 'count' } : { name: 'live' })
             }
             onBoard={() => setView({ name: 'board' })}
+            onSettings={() => setView({ name: 'settings' })}
           />
           {tabBar('home')}
         </>
@@ -193,6 +195,9 @@ function SessionApp({ email }: { email: string | null }) {
           onBack={() => setView({ name: 'board' })}
         />
       )
+
+    case 'settings':
+      return <SettingsScreen email={email} onBack={goHome} />
 
     case 'sessionDetail':
       return (

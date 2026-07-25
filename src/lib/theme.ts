@@ -20,6 +20,10 @@ function resolve(pref: ThemePref): 'light' | 'dark' {
 
 function applyTheme(): void {
   document.documentElement.dataset.theme = resolve(getThemePref())
+  // Keep the browser chrome in step with the active theme's background token.
+  const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()
+  const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
+  if (bg && meta) meta.content = bg
 }
 
 export function initTheme(): void {
