@@ -12,7 +12,8 @@ export interface Settings {
 
 const DEFAULTS: Settings = {
   defaultBuyInCents: 1000,
-  denominationsCents: [100, 25, 5],
+  // $10, $1.00, $0.25, $0.05 (Victor's game; editable UI arrives in milestone 6)
+  denominationsCents: [1000, 100, 25, 5],
 }
 
 const STORAGE_KEY = 'qpoker.settings'
