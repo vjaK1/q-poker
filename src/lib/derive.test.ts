@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildEvents,
   computeLeaderboard,
+  computePlayerSeries,
   computeStreak,
   computeVoidedIds,
   reconcileHint,
@@ -201,6 +202,34 @@ describe('computeStreak', () => {
   })
   it('empty history is streak 0', () => {
     expect(computeStreak([])).toBe(0)
+  })
+})
+
+// ---------------------------- player series --------------------------------
+
+describe('computePlayerSeries', () => {
+  const s1 = session('ps1', '2026-06-05T09:00:00.000Z')
+  const s2 = session('ps2', '2026-06-12T09:00:00.000Z')
+  const s3 = session('ps3', '2026-06-19T09:00:00.000Z')
+  const sLive = session('psLive', '2026-06-26T09:00:00.000Z', 'live')
+  const txs = [
+    ...play('ps1', s1.startedAt, 'p1', { inCents: 1000, outCents: 2000, startMin: 0, endMin: 240 }),
+    ...play('ps2', s2.startedAt, 'p1', { inCents: 1000, outCents: 500, startMin: 0, endMin: 240 }),
+    // p1 sits out s3; p2 plays it
+    ...play('ps3', s3.startedAt, 'p2', { inCents: 1000, outCents: 1000, startMin: 0, endMin: 240 }),
+    ...play('psLive', sLive.startedAt, 'p1', { inCents: 9000, outCents: 0, startMin: 0, endMin: 60 }),
+  ]
+  const sessions = [s1, s2, s3, sLive]
+
+  it('accumulates nets across played saved sessions only', () => {
+    const series = computePlayerSeries('p1', sessions, txs)
+    expect(series.map((p) => p.session.id)).toEqual(['ps1', 'ps2'])
+    expect(series.map((p) => p.netCents)).toEqual([1000, -500])
+    expect(series.map((p) => p.cumulativeCents)).toEqual([1000, 500])
+  })
+
+  it('is empty for a player with no saved sessions', () => {
+    expect(computePlayerSeries('nobody', sessions, txs)).toEqual([])
   })
 })
 

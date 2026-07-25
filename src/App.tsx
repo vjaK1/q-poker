@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { isSupabaseConfigured, onAuthChange, signOut, type AuthUser } from './lib/auth'
+import { isSupabaseConfigured, onAuthChange, type AuthUser } from './lib/auth'
 import { getLiveSessionState, seatedPlayerIds, type LiveSessionState } from './lib/ledger'
 import { LoginScreen } from './screens/LoginScreen'
 import { HomeScreen } from './screens/HomeScreen'
@@ -11,6 +11,8 @@ import { ReconcileScreen } from './screens/ReconcileScreen'
 import { SessionsScreen } from './screens/SessionsScreen'
 import { SessionDetailScreen } from './screens/SessionDetailScreen'
 import { ExportScreen } from './screens/ExportScreen'
+import { BoardScreen } from './screens/BoardScreen'
+import { PlayerProfileScreen } from './screens/PlayerProfileScreen'
 import { TabBar } from './components/TabBar'
 
 export default function App() {
@@ -58,6 +60,8 @@ type View =
   | { name: 'sessions' }
   | { name: 'sessionDetail'; sessionId: string }
   | { name: 'export'; sessionId: string; from: 'detail' | 'saved' }
+  | { name: 'board' }
+  | { name: 'playerProfile'; playerId: string }
 
 // The count queue (who was seated when "End session" was tapped) survives an
 // app reload via localStorage; the fallback is whoever is seated now.
@@ -132,11 +136,12 @@ function SessionApp({ email }: { email: string | null }) {
   }
 
   const goHome = () => setView({ name: 'home' })
-  const tabBar = (active: 'home' | 'sessions') => (
+  const tabBar = (active: 'home' | 'sessions' | 'board') => (
     <TabBar
       active={active}
       onHome={goHome}
       onSessions={() => setView({ name: 'sessions' })}
+      onBoard={() => setView({ name: 'board' })}
     />
   )
 
@@ -155,7 +160,7 @@ function SessionApp({ email }: { email: string | null }) {
             onResume={() =>
               setView(live?.session.status === 'counting' ? { name: 'count' } : { name: 'live' })
             }
-            onSignOut={() => void signOut()}
+            onBoard={() => setView({ name: 'board' })}
           />
           {tabBar('home')}
         </>
@@ -169,6 +174,24 @@ function SessionApp({ email }: { email: string | null }) {
           />
           {tabBar('sessions')}
         </>
+      )
+
+    case 'board':
+      return (
+        <>
+          <BoardScreen
+            onOpenPlayer={(playerId) => setView({ name: 'playerProfile', playerId })}
+          />
+          {tabBar('board')}
+        </>
+      )
+
+    case 'playerProfile':
+      return (
+        <PlayerProfileScreen
+          playerId={effective.playerId}
+          onBack={() => setView({ name: 'board' })}
+        />
       )
 
     case 'sessionDetail':

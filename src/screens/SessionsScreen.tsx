@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getSessionsOverview, type SessionOverviewRow } from '../lib/ledger'
-import { formatMoney } from '../lib/money'
+import { formatMoney, formatSignedMoney } from '../lib/money'
+import { getSettings } from '../lib/settings'
 import { sessionDisplayName } from '../lib/time'
 
 /** Sessions tab (§4.7): saved sessions, newest first. */
@@ -36,24 +37,35 @@ export function SessionsScreen({ onOpen }: { onOpen: (sessionId: string) => void
 
       {rows !== null && rows.length > 0 && (
         <div className="list">
-          {rows.map(({ session, playerCount, buyInsCents, discrepancyCents, balanced }) => (
-            <button key={session.id} className="row" onClick={() => onOpen(session.id)}>
-              <span className="row-main">
-                <span className="row-title">{sessionDisplayName(session.startedAt)}</span>
-                <span className="row-sub">
-                  {playerCount} player{playerCount === 1 ? '' : 's'} · in{' '}
-                  {formatMoney(buyInsCents)}
+          {rows.map(({ session, playerCount, buyInsCents, discrepancyCents, balanced, netsByPlayer }) => {
+            const myPlayerId = getSettings().myPlayerId
+            const myNet = myPlayerId !== null ? netsByPlayer[myPlayerId] : undefined
+            return (
+              <button key={session.id} className="row" onClick={() => onOpen(session.id)}>
+                <span className="row-main">
+                  <span className="row-title">{sessionDisplayName(session.startedAt)}</span>
+                  <span className="row-sub">
+                    {playerCount} player{playerCount === 1 ? '' : 's'} · in{' '}
+                    {formatMoney(buyInsCents)}
+                  </span>
                 </span>
-              </span>
-              {balanced ? (
-                <span className="row-end check">Balanced ✓</span>
-              ) : (
-                <span className="row-end" style={{ color: 'var(--warn)' }}>
-                  Off by {formatMoney(discrepancyCents)}
+                <span className="row-end">
+                  {myNet !== undefined && (
+                    <span className={myNet >= 0 ? 'pos' : 'neg'} style={{ display: 'block' }}>
+                      {formatSignedMoney(myNet)}
+                    </span>
+                  )}
+                  {balanced ? (
+                    <span className="row-sub check">Balanced ✓</span>
+                  ) : (
+                    <span className="row-sub" style={{ color: 'var(--warn)' }}>
+                      Off by {formatMoney(discrepancyCents)}
+                    </span>
+                  )}
                 </span>
-              )}
-            </button>
-          ))}
+              </button>
+            )
+          })}
         </div>
       )}
     </div>

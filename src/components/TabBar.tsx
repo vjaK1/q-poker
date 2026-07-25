@@ -1,14 +1,16 @@
-export type Tab = 'home' | 'sessions'
+export type Tab = 'home' | 'sessions' | 'board'
 
-/** Bottom tabs (§4). Board joins in milestone 5. */
+/** Bottom tabs (§4): Home, Sessions, Board. */
 export function TabBar({
   active,
   onHome,
   onSessions,
+  onBoard,
 }: {
   active: Tab
   onHome: () => void
   onSessions: () => void
+  onBoard: () => void
 }) {
   return (
     <nav className="tabbar">
@@ -20,6 +22,9 @@ export function TabBar({
         onClick={onSessions}
       >
         Sessions
+      </button>
+      <button className={`tab ${active === 'board' ? 'tab--active' : ''}`} onClick={onBoard}>
+        Board
       </button>
     </nav>
   )

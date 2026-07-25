@@ -8,12 +8,15 @@ export interface Settings {
   defaultBuyInCents: number
   /** Chip values driving the cash-out steppers, largest first. */
   denominationsCents: number[]
+  /** Which players row is "you" (drives Your bankroll / your net). */
+  myPlayerId: string | null
 }
 
 const DEFAULTS: Settings = {
   defaultBuyInCents: 1000,
   // $10, $1.00, $0.25, $0.05 (Victor's game; editable UI arrives in milestone 6)
   denominationsCents: [1000, 100, 25, 5],
+  myPlayerId: null,
 }
 
 const STORAGE_KEY = 'qpoker.settings'
@@ -34,6 +37,7 @@ export function getSettings(): Settings {
         parsed.denominationsCents.every((d) => Number.isInteger(d) && d > 0)
           ? parsed.denominationsCents
           : [...DEFAULTS.denominationsCents],
+      myPlayerId: typeof parsed.myPlayerId === 'string' ? parsed.myPlayerId : null,
     }
   } catch {
     return { ...DEFAULTS }

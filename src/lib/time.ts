@@ -16,14 +16,18 @@ function shifted(ts: string | Date): Date {
   return new Date(toInstant(ts).getTime() - LOGICAL_DAY_OFFSET_MS)
 }
 
-/** Logical day of a timestamp as "YYYY-MM-DD" (Melbourne, 3am rule). */
-export function logicalDayISO(ts: string | Date): string {
+function calendarISO(instant: Date): string {
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: MELBOURNE,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-  }).format(shifted(ts))
+  }).format(instant)
+}
+
+/** Logical day of a timestamp as "YYYY-MM-DD" (Melbourne, 3am rule). */
+export function logicalDayISO(ts: string | Date): string {
+  return calendarISO(shifted(ts))
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -35,7 +39,16 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
  * spec byte-for-byte and CLDR locales disagree on abbreviations ("July", "Sept").
  */
 export function sessionDisplayName(startedAt: string | Date): string {
-  const [y, m, d] = logicalDayISO(startedAt).split('-').map(Number)
+  return dayNameFromISO(logicalDayISO(startedAt))
+}
+
+/** Plain Melbourne calendar date name, no 3am shift. For the Home header. */
+export function melbourneDayName(ts: string | Date): string {
+  return dayNameFromISO(calendarISO(toInstant(ts)))
+}
+
+function dayNameFromISO(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number)
   const weekday = WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]
   return `${weekday} ${d} ${MONTHS[m - 1]}`
 }

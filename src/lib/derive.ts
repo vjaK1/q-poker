@@ -280,6 +280,43 @@ export function computeStreak(chronologicalNets: number[]): number {
   return streak
 }
 
+export interface PlayerSeriesPoint {
+  session: Session
+  netCents: number
+  cumulativeCents: number
+}
+
+/**
+ * One player's night-by-night results across saved sessions they played,
+ * chronological, with the running bankroll. Feeds the sparkline and the
+ * profile chart.
+ */
+export function computePlayerSeries(
+  playerId: string,
+  sessions: Session[],
+  txs: Tx[],
+): PlayerSeriesPoint[] {
+  const saved = sessions
+    .filter((s) => s.status === 'saved')
+    .sort((a, b) => a.startedAt.localeCompare(b.startedAt))
+  const txsBySession = new Map<string, Tx[]>()
+  for (const t of txs) {
+    const list = txsBySession.get(t.sessionId) ?? []
+    list.push(t)
+    txsBySession.set(t.sessionId, list)
+  }
+  const points: PlayerSeriesPoint[] = []
+  let cumulative = 0
+  for (const session of saved) {
+    const summary = summarizeSession(session, txsBySession.get(session.id) ?? [])
+    const mine = summary.players.find((p) => p.playerId === playerId)
+    if (!mine || mine.buyInCents === 0) continue
+    cumulative += mine.netCents
+    points.push({ session, netCents: mine.netCents, cumulativeCents: cumulative })
+  }
+  return points
+}
+
 export function computeLeaderboard(
   players: Player[],
   sessions: Session[],

@@ -1,37 +1,71 @@
-import type { LiveSessionState } from '../lib/ledger'
-import { formatMoney } from '../lib/money'
-import { formatElapsed, formatMelbourneTime } from '../lib/time'
+import { useEffect, useState } from 'react'
+import { getHomeData, type HomeData, type LiveSessionState } from '../lib/ledger'
+import { getSettings } from '../lib/settings'
+import { formatMoney, formatSignedMoney } from '../lib/money'
+import {
+  formatElapsed,
+  formatMelbourneTime,
+  melbourneDayName,
+  sessionDisplayName,
+} from '../lib/time'
 import { useNow } from '../hooks/useNow'
+import { Sparkline } from '../components/Sparkline'
+import { SettingsSheet } from '../components/SettingsSheet'
 
+/** Home dashboard (§4.1): idle and live states. */
 export function HomeScreen({
   live,
   email,
   savedNote,
   onStart,
   onResume,
-  onSignOut,
+  onBoard,
 }: {
   live: LiveSessionState | null
   email: string | null
   savedNote: string | null
   onStart: () => void
   onResume: () => void
-  onSignOut: () => void
+  onBoard: () => void
 }) {
   const now = useNow(30_000)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [myPlayerId, setMyPlayerId] = useState(getSettings().myPlayerId)
+  const [data, setData] = useState<HomeData | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    getHomeData(myPlayerId)
+      .then((d) => {
+        if (!cancelled) setData(d)
+      })
+      .catch(() => {
+        if (!cancelled) setData(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [myPlayerId, live])
 
   return (
     <div className="screen screen--tabbed">
       <header className="app-header">
-        <h1>Q.Poker</h1>
-        <button className="btn btn--inline" onClick={onSignOut}>
-          Sign out
+        <span>
+          <h1>Home</h1>
+          <span className="muted">{melbourneDayName(new Date(now))}</span>
+        </span>
+        <button
+          className="btn btn--inline"
+          aria-label="Settings"
+          onClick={() => setSettingsOpen(true)}
+        >
+          ⚙
         </button>
       </header>
 
       {savedNote && <div className="banner banner--ok">{savedNote}</div>}
 
-      {live ? (
+      {live && (
         <div className="card">
           <div className="row-sub">
             Live · started {formatMelbourneTime(live.session.startedAt)} ·{' '}
@@ -46,19 +80,80 @@ export function HomeScreen({
             Resume session
           </button>
         </div>
-      ) : (
+      )}
+
+      <div className="card">
+        <span className="muted">Your bankroll</span>
+        {myPlayerId === null ? (
+          <>
+            <p>Pick who you are to see your lifetime numbers.</p>
+            <button className="btn" onClick={() => setSettingsOpen(true)}>
+              This is me…
+            </button>
+          </>
+        ) : (
+          <>
+            <div
+              className={`hero-money ${(data?.me?.lifetimeNetCents ?? 0) >= 0 ? 'pos' : 'neg'}`}
+              style={{ fontSize: '2rem' }}
+            >
+              {formatSignedMoney(data?.me?.lifetimeNetCents ?? 0)}
+            </div>
+            {data?.me && data.me.cumulative.length >= 2 && (
+              <Sparkline values={[0, ...data.me.cumulative]} />
+            )}
+          </>
+        )}
+      </div>
+
+      {data?.lastSession && (
         <div className="card">
-          <p className="muted">No live session.</p>
-          <button className="btn btn--primary" onClick={onStart}>
-            Start session
-          </button>
+          <span className="muted">Last session</span>
+          <div className="row" style={{ padding: 0, minHeight: 0, border: 0 }}>
+            <span className="row-main row-title">
+              {sessionDisplayName(data.lastSession.session.startedAt)}
+            </span>
+            {data.lastSession.myNetCents !== null && (
+              <span
+                className={`row-end ${data.lastSession.myNetCents >= 0 ? 'pos' : 'neg'}`}
+              >
+                {formatSignedMoney(data.lastSession.myNetCents)}
+              </span>
+            )}
+          </div>
         </div>
       )}
 
-      <p className="muted">
-        Signed in as {email ?? 'unknown'}. Dashboard, sessions and board arrive in later
-        milestones.
-      </p>
+      {data && data.top3.length > 0 && (
+        <button className="card" style={{ textAlign: 'left', cursor: 'pointer' }} onClick={onBoard}>
+          <span className="muted">Leaderboard</span>
+          {data.top3.map((r, i) => (
+            <div key={r.player.id} className="row" style={{ padding: 0, minHeight: 36, border: 0 }}>
+              <span className="row-main">
+                {i + 1}. {r.player.name}
+              </span>
+              <span className={`row-end ${r.netCents >= 0 ? 'pos' : 'neg'}`}>
+                {formatSignedMoney(r.netCents)}
+              </span>
+            </div>
+          ))}
+          <span className="muted">Full board →</span>
+        </button>
+      )}
+
+      {!live && (
+        <button className="btn btn--primary" onClick={onStart}>
+          Start session
+        </button>
+      )}
+
+      {settingsOpen && (
+        <SettingsSheet
+          email={email}
+          onClose={() => setSettingsOpen(false)}
+          onChanged={() => setMyPlayerId(getSettings().myPlayerId)}
+        />
+      )}
     </div>
   )
 }

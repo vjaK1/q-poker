@@ -3,9 +3,11 @@ import { assertCents, denominationsTotalCents } from './money'
 import {
   buildEvents,
   computeLeaderboard,
+  computePlayerSeries,
   summarizeSession,
   type LeaderboardRow,
   type LedgerEvent,
+  type PlayerSeriesPoint,
   type SessionSummary,
 } from './derive'
 import type {
@@ -35,7 +37,7 @@ export type {
   Tx,
   TxType,
 }
-export type { LeaderboardRow, LedgerEvent, SessionSummary }
+export type { LeaderboardRow, LedgerEvent, PlayerSeriesPoint, SessionSummary }
 export type { PlayerSessionSummary, ReconcileHint } from './derive'
 export { RATE_STAT_MIN_SESSIONS, reconcileHint, seatedPlayerIds } from './derive'
 
@@ -372,6 +374,11 @@ export async function getLiveSessionState(): Promise<LiveSessionState | null> {
   }
 }
 
+async function fetchAllTxs(): Promise<Tx[]> {
+  const res = await db().from('transactions').select('*')
+  return unwrap<TxRow[]>(res).map(toTx)
+}
+
 /** One line per saved session for the Sessions tab list. */
 export interface SessionOverviewRow {
   session: Session
@@ -379,14 +386,12 @@ export interface SessionOverviewRow {
   buyInsCents: number
   discrepancyCents: number
   balanced: boolean
+  /** Net per playerId, for the "your net" column. */
+  netsByPlayer: Record<string, number>
 }
 
 export async function getSessionsOverview(): Promise<SessionOverviewRow[]> {
-  const [sessions, txsRes] = await Promise.all([
-    listSessions(),
-    db().from('transactions').select('*'),
-  ])
-  const txs = unwrap<TxRow[]>(txsRes).map(toTx)
+  const [sessions, txs] = await Promise.all([listSessions(), fetchAllTxs()])
   const bySession = new Map<string, Tx[]>()
   for (const t of txs) {
     const list = bySession.get(t.sessionId) ?? []
@@ -403,8 +408,82 @@ export async function getSessionsOverview(): Promise<SessionOverviewRow[]> {
         buyInsCents: summary.buyInsCents,
         discrepancyCents: summary.discrepancyCents,
         balanced: summary.balanced,
+        netsByPlayer: Object.fromEntries(summary.players.map((p) => [p.playerId, p.netCents])),
       }
     })
+}
+
+/** Everything the Home dashboard needs in one fetch. */
+export interface HomeData {
+  top3: LeaderboardRow[]
+  /** null when no "this is me" player is set. */
+  me: { lifetimeNetCents: number; cumulative: number[] } | null
+  lastSession: { session: Session; myNetCents: number | null } | null
+}
+
+export async function getHomeData(myPlayerId: string | null): Promise<HomeData> {
+  const [players, sessions, txs] = await Promise.all([
+    listPlayers(true),
+    listSessions(),
+    fetchAllTxs(),
+  ])
+  const top3 = computeLeaderboard(players, sessions, txs, {
+    window: 'all',
+    sort: 'net',
+    includeGuests: false,
+    now: new Date(),
+  }).slice(0, 3)
+
+  const saved = sessions
+    .filter((s) => s.status === 'saved')
+    .sort((a, b) => a.startedAt.localeCompare(b.startedAt))
+  const last = saved.at(-1) ?? null
+  let lastSession: HomeData['lastSession'] = null
+  if (last) {
+    const summary = summarizeSession(
+      last,
+      txs.filter((t) => t.sessionId === last.id),
+    )
+    const mine =
+      myPlayerId !== null ? summary.players.find((p) => p.playerId === myPlayerId) : undefined
+    lastSession = { session: last, myNetCents: mine ? mine.netCents : null }
+  }
+
+  let me: HomeData['me'] = null
+  if (myPlayerId !== null) {
+    const series = computePlayerSeries(myPlayerId, sessions, txs)
+    me = {
+      lifetimeNetCents: series.at(-1)?.cumulativeCents ?? 0,
+      cumulative: series.map((p) => p.cumulativeCents),
+    }
+  }
+  return { top3, me, lastSession }
+}
+
+/** Board profile: lifetime stats plus the cumulative bankroll series. */
+export interface PlayerProfile {
+  player: Player
+  /** null if they have never played a saved session. */
+  stats: LeaderboardRow | null
+  series: PlayerSeriesPoint[]
+}
+
+export async function getPlayerProfile(playerId: string): Promise<PlayerProfile> {
+  const [players, sessions, txs] = await Promise.all([
+    listPlayers(true),
+    listSessions(),
+    fetchAllTxs(),
+  ])
+  const player = players.find((p) => p.id === playerId)
+  if (!player) throw new Error('Player not found')
+  const stats =
+    computeLeaderboard(players, sessions, txs, {
+      window: 'all',
+      sort: 'net',
+      includeGuests: true,
+      now: new Date(),
+    }).find((r) => r.player.id === playerId) ?? null
+  return { player, stats, series: computePlayerSeries(playerId, sessions, txs) }
 }
 
 /** Everything the session detail screen needs: summary, audit events, names. */
@@ -457,10 +536,7 @@ export async function getLeaderboard(opts?: {
   const [players, sessions, txs] = await Promise.all([
     listPlayers(true),
     listSessions(),
-    (async () => {
-      const res = await db().from('transactions').select('*')
-      return unwrap<TxRow[]>(res).map(toTx)
-    })(),
+    fetchAllTxs(),
   ])
   return computeLeaderboard(players, sessions, txs, {
     window: opts?.window ?? 'all',
