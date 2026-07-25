@@ -4,6 +4,7 @@ import {
   addCorrection,
   addRebuy,
   beginCounting,
+  discardSession,
   seatedPlayerIds,
   type LedgerEvent,
   type LiveSessionState,
@@ -45,6 +46,7 @@ export function LiveSessionScreen({
   const [pickingCashOut, setPickingCashOut] = useState(false)
   const [confirmEnd, setConfirmEnd] = useState(false)
   const [confirmUndo, setConfirmUndo] = useState(false)
+  const [confirmDiscard, setConfirmDiscard] = useState(false)
   const [adding, setAdding] = useState(false)
 
   const seated = new Set(seatedPlayerIds(state.events))
@@ -192,6 +194,35 @@ export function LiveSessionScreen({
           </button>
         )}
       </div>
+
+      {confirmDiscard ? (
+        <div className="btn-row">
+          <button
+            className="btn btn--danger"
+            disabled={busy}
+            onClick={() =>
+              void run(async () => {
+                await discardSession(state.session.id)
+                await refresh()
+                onHome()
+              })
+            }
+          >
+            Yes, discard this session
+          </button>
+          <button className="btn" disabled={busy} onClick={() => setConfirmDiscard(false)}>
+            Keep it
+          </button>
+        </div>
+      ) : (
+        <button
+          className="btn btn--danger"
+          disabled={busy}
+          onClick={() => setConfirmDiscard(true)}
+        >
+          Discard session
+        </button>
+      )}
 
       {rebuyFor && (
         <Sheet onClose={() => setRebuyFor(null)}>

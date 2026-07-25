@@ -1,4 +1,4 @@
-export type SessionStatus = 'live' | 'counting' | 'saved'
+export type SessionStatus = 'live' | 'counting' | 'saved' | 'discarded'
 
 export type TxType = 'buy_in' | 'rebuy' | 'cash_out' | 'correction'
 

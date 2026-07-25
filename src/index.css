@@ -290,6 +290,11 @@ button.row {
   color: var(--warn);
 }
 
+.btn--danger {
+  border-color: var(--neg);
+  color: var(--neg);
+}
+
 .btn--small {
   min-height: 44px;
   width: auto;

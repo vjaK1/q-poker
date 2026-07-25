@@ -363,7 +363,7 @@ describe('computeLeaderboard', () => {
     return all
   })
 
-  // A live session with big numbers that must be ignored everywhere
+  // Live and discarded sessions with big numbers that must be ignored everywhere
   const liveSession = session('live1', '2026-07-24T09:00:00.000Z', 'live')
   const liveTxs = play('live1', liveSession.startedAt, 'alice', {
     inCents: 100000,
@@ -371,9 +371,16 @@ describe('computeLeaderboard', () => {
     startMin: 0,
     endMin: 60,
   })
+  const discardedSession = session('disc1', '2026-07-17T09:00:00.000Z', 'discarded')
+  const discardedTxs = play('disc1', discardedSession.startedAt, 'alice', {
+    inCents: 50000,
+    outCents: 0,
+    startMin: 0,
+    endMin: 60,
+  })
 
-  const allSessions = [...sessions, liveSession]
-  const allTxs = [...txs, ...liveTxs]
+  const allSessions = [...sessions, liveSession, discardedSession]
+  const allTxs = [...txs, ...liveTxs, ...discardedTxs]
   const now = new Date('2026-07-25T12:00:00Z')
 
   it('all-time: aggregates only saved sessions, guests hidden by default', () => {
@@ -382,7 +389,7 @@ describe('computeLeaderboard', () => {
     })
     expect(rows.map((r) => r.player.id)).toEqual(['alice', 'dave', 'cara'])
     const alice = rows[0]
-    expect(alice.games).toBe(12) // the live session did not count
+    expect(alice.games).toBe(12) // neither the live nor the discarded session counted
     expect(alice.netCents).toBe(5100)
     expect(alice.seatMs).toBe(12 * 240 * 60_000)
     expect(alice.hourlyRateCents).toBeCloseTo(5100 / 48, 5)

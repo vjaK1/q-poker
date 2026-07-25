@@ -180,9 +180,27 @@ export async function getSession(id: string): Promise<Session> {
   return toSession(unwrap<SessionRow>(res))
 }
 
-export async function listSessions(): Promise<Session[]> {
-  const res = await db().from('sessions').select('*').order('started_at', { ascending: false })
+export async function listSessions(includeDiscarded = false): Promise<Session[]> {
+  const base = db().from('sessions').select('*')
+  const filtered = includeDiscarded ? base : base.neq('status', 'discarded')
+  const res = await filtered.order('started_at', { ascending: false })
   return unwrap<SessionRow[]>(res).map(toSession)
+}
+
+/**
+ * Discard a session: it disappears from every list, stat and export, but its
+ * rows remain in the database. Never deletes anything.
+ */
+export async function discardSession(sessionId: string): Promise<Session> {
+  const { data, error } = await db()
+    .from('sessions')
+    .update({ status: 'discarded' })
+    .eq('id', sessionId)
+    .select()
+  if (error) throw new Error(error.message)
+  const rows = (data ?? []) as SessionRow[]
+  if (rows.length === 0) throw new Error('Session not found')
+  return toSession(rows[0])
 }
 
 /** "End session" — starts the count queue. Only valid from 'live'. */
