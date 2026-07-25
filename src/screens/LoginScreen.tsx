@@ -3,11 +3,11 @@ import { signInWithMagicLink, verifyEmailOtp } from '../lib/auth'
 
 type Phase = 'idle' | 'sending' | 'sent'
 
-export function LoginScreen() {
+export function LoginScreen({ initialError = null }: { initialError?: string | null }) {
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
   const [phase, setPhase] = useState<Phase>('idle')
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(initialError)
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
@@ -97,6 +97,12 @@ export function LoginScreen() {
               <p className="muted">
                 Sign-ups are disabled by design. Create your user first: Supabase dashboard →
                 Authentication → Users → Add user.
+              </p>
+            )}
+            {/expired|invalid/i.test(error) && (
+              <p className="muted">
+                Magic links only work once. If you tapped it more than once, or tapped an old
+                email, request a fresh one below.
               </p>
             )}
           </div>

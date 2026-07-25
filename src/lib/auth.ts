@@ -37,6 +37,23 @@ export async function verifyEmailOtp(email: string, code: string): Promise<void>
   if (error) throw new Error(error.message)
 }
 
+/**
+ * Supabase redirects a failed auth attempt (expired or already-used magic
+ * link, etc.) back to the app with an error in the URL hash instead of
+ * tokens. Surfacing it is the difference between "nothing happened" and
+ * knowing what actually went wrong. Only touches the URL when an error is
+ * actually present, so it never races with detectSessionInUrl on a real
+ * successful sign-in (which also lands via the hash).
+ */
+export function consumeUrlAuthError(): string | null {
+  const hash = window.location.hash
+  if (!hash || !hash.includes('error=')) return null
+  const params = new URLSearchParams(hash.slice(1))
+  const description = params.get('error_description')
+  history.replaceState(null, '', window.location.pathname + window.location.search)
+  return description ? description.replace(/\+/g, ' ') : (params.get('error') ?? 'Sign-in failed')
+}
+
 export async function signOut(): Promise<void> {
   const { error } = await getSupabase().auth.signOut()
   if (error) throw new Error(error.message)

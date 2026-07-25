@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { isSupabaseConfigured, onAuthChange, type AuthUser } from './lib/auth'
+import { consumeUrlAuthError, isSupabaseConfigured, onAuthChange, type AuthUser } from './lib/auth'
 import { getLiveSessionState, seatedPlayerIds, type LiveSessionState } from './lib/ledger'
 import { LoginScreen } from './screens/LoginScreen'
 import { HomeScreen } from './screens/HomeScreen'
@@ -27,6 +27,8 @@ type AuthState =
 
 function AuthedApp() {
   const [auth, setAuth] = useState<AuthState>({ phase: 'loading' })
+  // Read once, before Supabase's own hash processing might rewrite the URL.
+  const [authError] = useState(() => consumeUrlAuthError())
 
   useEffect(
     () =>
@@ -43,7 +45,7 @@ function AuthedApp() {
       </div>
     )
   }
-  if (auth.phase === 'signed-out') return <LoginScreen />
+  if (auth.phase === 'signed-out') return <LoginScreen initialError={authError} />
   return <SessionApp email={auth.user.email} />
 }
 
