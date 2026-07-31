@@ -18,4 +18,5 @@ Read `poker-tracker-build-spec.md` before making any design decision. It is the 
 - A $0 net is neither a win nor a loss; leaderboard/lifetime stats count only `status = 'saved'` sessions.
 - Sessions are never deleted: unwanted ones get `status = 'discarded'` (hidden from all lists, stats and exports; rows remain). Undo in the UI = a `correction` row with note "Undo".
 - UI copy: no em dashes, no timestamps on player rows (audit trail only), amounts styled prominently (`.row-amount`).
+- Player names are unique, case/whitespace-insensitively (app check + DB index, 2026-07-31). Same-named humans get an initial.
 - Dependencies are frozen at: react, react-dom, @supabase/supabase-js (+ dev: vite, @vitejs/plugin-react, vite-plugin-pwa, typescript, @types/react*, vitest). Ask Victor before adding anything else.

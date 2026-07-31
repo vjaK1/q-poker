@@ -4,9 +4,10 @@ import { useBusy } from '../hooks/useBusy'
 import { Sheet } from './Sheet'
 
 /**
- * "Add player": pick from existing (non-archived) players or create a new one
- * (name + guest flag). What happens on pick is the caller's business —
- * the start screen adds a roster row, the live screen buys them straight in.
+ * "Add player": one box that searches existing players first and only offers
+ * to create a new one when nobody matches. Redesigned after a real incident
+ * (2026-07-31): with ~40 players in the group, the old unfiltered list made
+ * creating "Ken" again easier than finding him, which forked histories.
  */
 export function AddPlayerSheet({
   excludeIds,
@@ -20,6 +21,7 @@ export function AddPlayerSheet({
   onClose: () => void
 }) {
   const [existing, setExisting] = useState<Player[] | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [name, setName] = useState('')
   const [isGuest, setIsGuest] = useState(false)
   const { busy, error, run } = useBusy()
@@ -30,24 +32,47 @@ export function AddPlayerSheet({
       .then((players) => {
         if (!cancelled) setExisting(players)
       })
-      .catch(() => {
-        if (!cancelled) setExisting([])
+      .catch((err: unknown) => {
+        if (!cancelled) setLoadError(err instanceof Error ? err.message : String(err))
       })
     return () => {
       cancelled = true
     }
   }, [])
 
+  const query = name.trim().toLowerCase()
   const candidates = (existing ?? []).filter((p) => !excludeIds.includes(p.id))
+  const matches = query
+    ? candidates.filter((p) => p.name.toLowerCase().includes(query))
+    : candidates
+  const exact = (existing ?? []).find((p) => p.name.trim().toLowerCase() === query)
+  const exactInSession = exact !== undefined && excludeIds.includes(exact.id)
 
   return (
     <Sheet onClose={onClose}>
       <div className="sheet-title">Add player</div>
 
-      {existing === null && <p className="muted">Loading players…</p>}
-      {existing !== null && candidates.length > 0 && (
+      <div className="field">
+        <label htmlFor="player-search">Name</label>
+        <input
+          id="player-search"
+          placeholder="Search, or type a new name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+      </div>
+
+      {loadError !== null && (
+        <p className="notice notice--error">
+          Couldn't load existing players ({loadError}). Careful with creating new ones here,
+          you might duplicate someone.
+        </p>
+      )}
+      {existing === null && loadError === null && <p className="muted">Loading players…</p>}
+
+      {matches.length > 0 && (
         <div className="list">
-          {candidates.map((p) => (
+          {matches.map((p) => (
             <button
               key={p.id}
               className="row"
@@ -63,43 +88,40 @@ export function AddPlayerSheet({
           ))}
         </div>
       )}
-      {existing !== null && candidates.length === 0 && (
-        <p className="muted">No other players yet. Create one below.</p>
+
+      {exactInSession && <p className="muted">{exact.name} is already in this session.</p>}
+      {query !== '' && exact !== undefined && !exactInSession && (
+        <p className="muted">
+          {exact.name} already exists. Tap them above instead of creating a double.
+        </p>
       )}
 
-      <form
-        className="card"
-        onSubmit={(e) => {
-          e.preventDefault()
-          void run(async () => {
-            const created = await createPlayer(name, isGuest)
-            setName('')
-            setIsGuest(false)
-            await onPick(created)
-          })
-        }}
-      >
-        <div className="field">
-          <label htmlFor="new-player-name">New player</label>
-          <input
-            id="new-player-name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Name"
-          />
+      {query !== '' && exact === undefined && existing !== null && (
+        <div className="card">
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <input
+              type="checkbox"
+              checked={isGuest}
+              onChange={(e) => setIsGuest(e.target.checked)}
+            />
+            Guest (hidden from the leaderboard by default)
+          </label>
+          <button
+            className="btn btn--primary"
+            disabled={busy}
+            onClick={() =>
+              void run(async () => {
+                const created = await createPlayer(name, isGuest)
+                setName('')
+                setIsGuest(false)
+                await onPick(created)
+              })
+            }
+          >
+            Create new player "{name.trim()}"
+          </button>
         </div>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <input
-            type="checkbox"
-            checked={isGuest}
-            onChange={(e) => setIsGuest(e.target.checked)}
-          />
-          Guest (hidden from the leaderboard by default)
-        </label>
-        <button className="btn btn--primary" type="submit" disabled={busy || !name.trim()}>
-          Create &amp; {pickLabel.toLowerCase()}
-        </button>
-      </form>
+      )}
 
       {error && <p className="notice notice--error">{error}</p>}
       <button className="btn" onClick={onClose} disabled={busy}>

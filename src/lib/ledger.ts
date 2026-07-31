@@ -118,9 +118,29 @@ export async function listPlayers(includeArchived = false): Promise<Player[]> {
   return rows.map(toPlayer)
 }
 
+/**
+ * Names are identities in this app (exports, leaderboards, history), so they
+ * are unique case- and whitespace-insensitively. A duplicate name would fork
+ * a player's history in two, which is exactly what happened on 2026-07-31.
+ * A DB unique index backstops this check.
+ */
+async function assertNameFree(name: string, exceptId?: string): Promise<void> {
+  const players = await listPlayers(true)
+  const clash = players.find(
+    (p) => p.id !== exceptId && p.name.trim().toLowerCase() === name.trim().toLowerCase(),
+  )
+  if (clash) {
+    throw new Error(
+      `A player named "${clash.name}" already exists${clash.archivedAt ? ' (archived, see Settings)' : ''}. ` +
+        'Add a surname or initial if this is a different person.',
+    )
+  }
+}
+
 export async function createPlayer(name: string, isGuest = false): Promise<Player> {
   const trimmed = name.trim()
   if (!trimmed) throw new Error('Player name cannot be empty')
+  await assertNameFree(trimmed)
   const res = await db()
     .from('players')
     .insert({ name: trimmed, is_guest: isGuest })
@@ -132,6 +152,7 @@ export async function createPlayer(name: string, isGuest = false): Promise<Playe
 export async function renamePlayer(id: string, name: string): Promise<Player> {
   const trimmed = name.trim()
   if (!trimmed) throw new Error('Player name cannot be empty')
+  await assertNameFree(trimmed, id)
   const res = await db().from('players').update({ name: trimmed }).eq('id', id).select().single()
   return toPlayer(unwrap<PlayerRow>(res))
 }
