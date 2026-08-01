@@ -16,9 +16,9 @@ import { useBusy } from '../hooks/useBusy'
 import { Sheet } from '../components/Sheet'
 
 const THEMES: Array<{ key: ThemePref; label: string }> = [
-  { key: 'system', label: 'System' },
-  { key: 'light', label: 'Light' },
-  { key: 'dark', label: 'Dark' },
+  { key: 'light', label: 'Paper' },
+  { key: 'dark', label: 'Midnight' },
+  { key: 'system', label: 'Match phone' },
 ]
 
 /** Settings (§4.9): theme, default buy-in, denominations, players, identity. */

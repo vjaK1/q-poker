@@ -1,3 +1,7 @@
+/**
+ * 'light' is the Paper theme, 'dark' is Midnight (decided 2026-08-01).
+ * Paper is the app's default; 'system' ("Match phone") is opt-in.
+ */
 export type ThemePref = 'system' | 'light' | 'dark'
 
 const STORAGE_KEY = 'qpoker.theme'
@@ -6,7 +10,7 @@ const darkQuery = () => window.matchMedia('(prefers-color-scheme: dark)')
 
 export function getThemePref(): ThemePref {
   const v = localStorage.getItem(STORAGE_KEY)
-  return v === 'light' || v === 'dark' || v === 'system' ? v : 'system'
+  return v === 'light' || v === 'dark' || v === 'system' ? v : 'light'
 }
 
 export function setThemePref(pref: ThemePref): void {

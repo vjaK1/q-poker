@@ -117,7 +117,7 @@ export function BoardScreen({ onOpenPlayer }: { onOpenPlayer: (playerId: string)
         <div className="list">
           {rows.map((r, i) => (
             <button key={r.player.id} className="row" onClick={() => onOpenPlayer(r.player.id)}>
-              <span className="board-rank">{i + 1}</span>
+              <span className={`board-rank ${i === 0 ? 'board-rank--top' : ''}`}>{i + 1}</span>
               <span className="row-main">
                 <span className="row-title">
                   {r.player.name}

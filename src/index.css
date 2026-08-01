@@ -2,42 +2,80 @@
    Theme tokens. Every colour in the app lives here and nowhere else.
    The active theme is set via data-theme="light" | "dark" on <html>
    (see src/lib/theme.ts). No component or rule may hardcode a colour.
+
+   The two themes are real art directions, not tints of each other:
+   - light = "Paper": cream ledger book, ink text, New York serif display,
+     accounting red and green, squared corners, solid ruled tab bar.
+   - dark = "Midnight": true black for OLED, aged-gold accent, ultra-light
+     hero numerals, frosted glass tab bar.
 --------------------------------------------------------------------------- */
 
 [data-theme='light'] {
   color-scheme: light;
-  --bg: #f6f7f8;
-  --surface: #ffffff;
-  --text: #16181c;
-  --muted: #667085;
-  --border: #e4e7ec;
-  --accent: #2f6fed;
-  --accent-contrast: #ffffff;
-  --pos: #17803d;
-  --neg: #d92d20;
-  --warn: #b54708;
-  --sheet-scrim: rgba(22, 24, 28, 0.45);
+  --bg: #f4efe4;
+  --surface: #fdfbf4;
+  --raise: #ece5d4;
+  --text: #262319;
+  --muted: #877f6c;
+  --border: rgba(38, 35, 25, 0.16);
+  --accent: #215c46;
+  --accent-contrast: #f7f3e8;
+  --pos: #1e6b4b;
+  --neg: #b23a31;
+  --warn: #8a5c1e;
+  --sheet-scrim: rgba(38, 35, 25, 0.45);
+  --font-display: ui-serif, 'New York', Georgia, 'Times New Roman', serif;
+  --display-style: italic;
+  --display-weight: 600;
+  --display-track: -0.01em;
+  --hero-weight: 500;
+  --hero-track: -0.01em;
+  --radius-lg: 10px;
+  --radius-md: 8px;
+  --tabbar-bg: #f4efe4;
+  --tabbar-blur: none;
+  --btn-glow: none;
 }
 
 [data-theme='dark'] {
   color-scheme: dark;
-  --bg: #101114;
-  --surface: #17181c;
-  --text: #f2f4f7;
-  --muted: #98a2b3;
-  --border: #26272c;
-  --accent: #6ea0ff;
-  --accent-contrast: #101114;
-  --pos: #3dcc74;
-  --neg: #ff6b5e;
+  --bg: #0a0b0f;
+  --surface: #14161c;
+  --raise: #1c1f27;
+  --text: #efede8;
+  --muted: #8d8b84;
+  --border: rgba(235, 225, 200, 0.09);
+  --accent: #d3a968;
+  --accent-contrast: #17130a;
+  --pos: #5ec98f;
+  --neg: #e0616e;
   --warn: #f0a53f;
-  --sheet-scrim: rgba(0, 0, 0, 0.6);
+  --sheet-scrim: rgba(0, 0, 0, 0.65);
+  --font-display: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --display-style: normal;
+  --display-weight: 650;
+  --display-track: -0.02em;
+  --hero-weight: 200;
+  --hero-track: -0.03em;
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --tabbar-bg: rgba(10, 11, 15, 0.72);
+  --tabbar-blur: blur(18px);
+  --btn-glow: 0 6px 18px rgba(211, 169, 104, 0.22);
 }
 
 /* --------------------------------- base ---------------------------------- */
 
+:root {
+  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
 * {
   box-sizing: border-box;
+}
+
+html {
+  background: var(--bg);
 }
 
 html,
@@ -48,7 +86,7 @@ body,
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-body);
   background: var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
@@ -60,8 +98,59 @@ input {
 }
 
 h1 {
-  font-size: 1.25rem;
+  font-family: var(--font-display);
+  font-style: var(--display-style);
+  font-weight: var(--display-weight);
+  letter-spacing: var(--display-track);
+  font-size: 1.5rem;
+  line-height: 1.2;
   margin: 0;
+}
+
+input[type='checkbox'] {
+  accent-color: var(--accent);
+}
+
+.btn:focus-visible,
+.chip:focus-visible,
+.tab:focus-visible,
+button.row:focus-visible,
+.select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* -------------------------------- motion ---------------------------------- */
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(1.5rem);
+    opacity: 0;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes bar-in {
+  /* keep the translateY: bars are vertically centred with a transform too */
+  from {
+    transform: translateY(-50%) scaleX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet,
+  .sheet-backdrop,
+  .netbar-bar {
+    animation: none;
+  }
+  .btn:not(:disabled):active {
+    transform: none;
+  }
 }
 
 /* ------------------------------ components ------------------------------- */
@@ -83,7 +172,7 @@ h1 {
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   padding: 1rem;
   display: flex;
   flex-direction: column;
@@ -112,8 +201,8 @@ h1 {
   min-height: 44px;
   padding: 0 0.75rem;
   border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--bg);
+  border-radius: var(--radius-md);
+  background: var(--surface);
   color: var(--text);
 }
 
@@ -126,18 +215,24 @@ h1 {
   min-height: 44px;
   padding: 0 1rem;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--surface);
   color: var(--text);
   cursor: pointer;
   width: 100%;
+  transition: transform 100ms ease;
+}
+
+.btn:not(:disabled):active {
+  transform: translateY(1px) scale(0.99);
 }
 
 .btn--primary {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-contrast);
-  font-weight: 600;
+  font-weight: 650;
+  box-shadow: var(--btn-glow);
 }
 
 .btn--inline {
@@ -151,7 +246,7 @@ h1 {
 
 .notice {
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 0.75rem;
   font-size: 0.9375rem;
 }
@@ -193,8 +288,10 @@ h1 {
 }
 
 .hero-money {
-  font-size: 2.75rem;
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 3rem;
+  font-weight: var(--hero-weight);
+  letter-spacing: var(--hero-track);
   font-variant-numeric: tabular-nums;
   line-height: 1.1;
 }
@@ -208,7 +305,7 @@ h1 {
 .list {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
 }
 
@@ -257,6 +354,7 @@ button.row {
 }
 
 .row-amount {
+  font-family: var(--font-display);
   font-size: 0.875rem;
   font-style: italic;
   font-weight: 500;
@@ -265,11 +363,20 @@ button.row {
 
 .row-end {
   text-align: right;
+  font-family: var(--font-display);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
+/* Secondary lines stacked inside a row-end ("Balanced", running table
+   totals) stay in the quiet body face; only the money is display type. */
+.row-end .row-sub {
+  font-family: var(--font-body);
+  font-weight: 400;
+}
+
 .banner {
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 0.75rem 1rem;
   font-weight: 600;
   border: 1px solid var(--border);
@@ -305,7 +412,10 @@ button.row {
 .screen-title {
   flex: 1;
   text-align: center;
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-style: var(--display-style);
+  font-weight: var(--display-weight);
+  letter-spacing: var(--display-track);
 }
 
 .timer {
@@ -322,12 +432,13 @@ button.row {
   display: flex;
   align-items: flex-end;
   z-index: 10;
+  animation: fade-in 160ms ease-out;
 }
 
 .sheet {
   background: var(--surface);
   border-top: 1px solid var(--border);
-  border-radius: 16px 16px 0 0;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   width: 100%;
   max-width: 30rem;
   margin: 0 auto;
@@ -337,11 +448,15 @@ button.row {
   gap: 0.875rem;
   max-height: 85dvh;
   overflow-y: auto;
+  animation: sheet-in 240ms cubic-bezier(0.2, 0.9, 0.25, 1);
 }
 
 .sheet-title {
+  font-family: var(--font-display);
+  font-style: var(--display-style);
+  font-weight: var(--display-weight);
+  letter-spacing: var(--display-track);
   font-size: 1.125rem;
-  font-weight: 700;
 }
 
 /* cash-out steppers */
@@ -376,8 +491,8 @@ button.row {
   width: 44px;
   height: 44px;
   border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--bg);
+  border-radius: var(--radius-md);
+  background: var(--raise);
   color: var(--text);
   font-size: 1.25rem;
   cursor: pointer;
@@ -431,7 +546,9 @@ button.row {
   left: 0;
   right: 0;
   display: flex;
-  background: var(--surface);
+  background: var(--tabbar-bg);
+  -webkit-backdrop-filter: var(--tabbar-blur);
+  backdrop-filter: var(--tabbar-blur);
   border-top: 1px solid var(--border);
   padding-bottom: env(safe-area-inset-bottom);
   z-index: 5;
@@ -439,22 +556,33 @@ button.row {
 
 .tab {
   flex: 1;
-  min-height: 52px;
+  min-height: 56px;
+  padding: 0.5rem 0 0.375rem;
   border: 0;
   background: none;
   color: var(--muted);
   font: inherit;
-  font-size: 0.9375rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.tab svg {
+  display: block;
 }
 
 .tab--active {
   color: var(--accent);
-  font-weight: 700;
 }
 
 .screen--tabbed {
-  padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  padding-bottom: calc(84px + env(safe-area-inset-bottom));
 }
 
 /* board and profile */
@@ -477,9 +605,10 @@ button.row {
 }
 
 .chip--active {
+  background: var(--accent);
   border-color: var(--accent);
-  color: var(--accent);
-  font-weight: 700;
+  color: var(--accent-contrast);
+  font-weight: 650;
 }
 
 .select {
@@ -487,7 +616,7 @@ button.row {
   min-height: 44px;
   padding: 0 0.75rem;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--surface);
   color: var(--text);
   font: inherit;
@@ -498,6 +627,11 @@ button.row {
   width: 1.5rem;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
+}
+
+.board-rank--top {
+  color: var(--accent);
+  font-weight: 700;
 }
 
 .avatar {
@@ -524,8 +658,10 @@ button.row {
 }
 
 .stat-value {
-  font-size: 1.375rem;
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: var(--display-weight);
+  letter-spacing: var(--display-track);
   font-variant-numeric: tabular-nums;
 }
 
@@ -566,16 +702,21 @@ button.row {
   top: 50%;
   transform: translateY(-50%);
   height: 10px;
+  animation: bar-in 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .netbar-bar--pos {
   background: var(--pos);
-  border-radius: 0 4px 4px 0;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--pos) 70%, transparent), var(--pos));
+  border-radius: 0 999px 999px 0;
+  transform-origin: left center;
 }
 
 .netbar-bar--neg {
   background: var(--neg);
-  border-radius: 4px 0 0 4px;
+  background: linear-gradient(270deg, color-mix(in srgb, var(--neg) 70%, transparent), var(--neg));
+  border-radius: 999px 0 0 999px;
+  transform-origin: right center;
 }
 
 /* export preview */
@@ -583,7 +724,7 @@ button.row {
 .export-pre {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   padding: 1rem;
   margin: 0;
   overflow-x: auto;
