@@ -2,8 +2,9 @@ import type { LeaderboardRow } from '../lib/ledger'
 
 /**
  * Diverging horizontal bars: net P/L per player around a shared zero axis,
- * winners right in --pos, losers left in --neg. Always ordered and encoded
- * by net regardless of the board's sort (polarity colour only means money).
+ * winners right in --pos, losers left in --neg. Bars always encode net;
+ * row order is taken from the caller, so the chart lines up name-for-name
+ * with the ranked list below under every sort and direction.
  * Exact figures live in the ranked list below, so bars stay unlabelled;
  * the chart is hidden from screen readers because that list is the
  * accessible table view of the same data.
@@ -11,15 +12,14 @@ import type { LeaderboardRow } from '../lib/ledger'
 export function NetBarChart({ rows }: { rows: LeaderboardRow[] }) {
   if (rows.length === 0) return null
 
-  const byNet = [...rows].sort((a, b) => b.netCents - a.netCents)
-  const maxPos = Math.max(0, ...byNet.map((r) => r.netCents))
-  const maxNeg = Math.max(0, ...byNet.map((r) => -r.netCents))
+  const maxPos = Math.max(0, ...rows.map((r) => r.netCents))
+  const maxNeg = Math.max(0, ...rows.map((r) => -r.netCents))
   const span = maxPos + maxNeg || 1
   const zeroPct = (maxNeg / span) * 100
 
   return (
     <div aria-hidden="true">
-      {byNet.map((r) => {
+      {rows.map((r) => {
         const widthPct = (Math.abs(r.netCents) / span) * 100
         const positive = r.netCents >= 0
         return (
