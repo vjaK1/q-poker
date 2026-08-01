@@ -1,4 +1,4 @@
-import type { BoardSort, BoardWindow, Player, Session, Tx } from './types'
+import type { BoardDir, BoardSort, BoardWindow, Player, Session, Tx } from './types'
 import { logicalDayISO } from './time'
 
 /**
@@ -62,6 +62,8 @@ export interface LeaderboardRow {
 export interface LeaderboardOptions {
   window: BoardWindow
   sort: BoardSort
+  /** Defaults to 'desc' (best first). */
+  dir?: BoardDir
   includeGuests: boolean
   now: Date
 }
@@ -405,10 +407,10 @@ export function computeLeaderboard(
 
   let out = [...rows.values()]
   if (!opts.includeGuests) out = out.filter((r) => !r.player.isGuest)
-  return sortRows(out, opts.sort)
+  return sortRows(out, opts.sort, opts.dir ?? 'desc')
 }
 
-function sortRows(rows: LeaderboardRow[], sort: BoardSort): LeaderboardRow[] {
+function sortRows(rows: LeaderboardRow[], sort: BoardSort, dir: BoardDir): LeaderboardRow[] {
   const key = (r: LeaderboardRow): number | null => {
     switch (sort) {
       case 'net':
@@ -423,14 +425,17 @@ function sortRows(rows: LeaderboardRow[], sort: BoardSort): LeaderboardRow[] {
         return r.winRatePct
     }
   }
+  // 'asc' mirrors every numeric comparison (including the net tiebreak);
+  // names stay alphabetical either way.
+  const sign = dir === 'asc' ? -1 : 1
   const tieBreak = (a: LeaderboardRow, b: LeaderboardRow) =>
-    b.netCents - a.netCents || a.player.name.localeCompare(b.player.name)
+    sign * (b.netCents - a.netCents) || a.player.name.localeCompare(b.player.name)
   return [...rows].sort((a, b) => {
     const ka = key(a)
     const kb = key(b)
     if (ka === null && kb === null) return tieBreak(a, b)
-    if (ka === null) return 1 // nulls (under-threshold rate stats) sink to the bottom
+    if (ka === null) return 1 // nulls (under-threshold rate stats) sink to the bottom in both directions
     if (kb === null) return -1
-    return kb - ka || tieBreak(a, b)
+    return sign * (kb - ka) || tieBreak(a, b)
   })
 }

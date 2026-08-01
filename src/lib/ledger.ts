@@ -11,6 +11,7 @@ import {
   type SessionSummary,
 } from './derive'
 import type {
+  BoardDir,
   BoardSort,
   BoardWindow,
   Denominations,
@@ -28,6 +29,7 @@ import type {
  */
 
 export type {
+  BoardDir,
   BoardSort,
   BoardWindow,
   Denominations,
@@ -552,6 +554,7 @@ export async function getLastSavedRoster(): Promise<Player[]> {
 export async function getLeaderboard(opts?: {
   window?: BoardWindow
   sort?: BoardSort
+  dir?: BoardDir
   includeGuests?: boolean
 }): Promise<LeaderboardRow[]> {
   const [players, sessions, txs] = await Promise.all([
@@ -562,6 +565,7 @@ export async function getLeaderboard(opts?: {
   return computeLeaderboard(players, sessions, txs, {
     window: opts?.window ?? 'all',
     sort: opts?.sort ?? 'net',
+    dir: opts?.dir ?? 'desc',
     includeGuests: opts?.includeGuests ?? false,
     now: new Date(),
   })

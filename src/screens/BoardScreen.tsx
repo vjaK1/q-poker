@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   getLeaderboard,
   RATE_STAT_MIN_SESSIONS,
+  type BoardDir,
   type BoardSort,
   type BoardWindow,
   type LeaderboardRow,
@@ -31,6 +32,7 @@ export function hoursLabel(seatMs: number): string {
 export function BoardScreen({ onOpenPlayer }: { onOpenPlayer: (playerId: string) => void }) {
   const [window, setWindow] = useState<BoardWindow>('all')
   const [sort, setSort] = useState<BoardSort>('net')
+  const [dir, setDir] = useState<BoardDir>('desc')
   const [includeGuests, setIncludeGuests] = useState(false)
   const [rows, setRows] = useState<LeaderboardRow[] | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -38,7 +40,7 @@ export function BoardScreen({ onOpenPlayer }: { onOpenPlayer: (playerId: string)
   useEffect(() => {
     let cancelled = false
     setRows(null)
-    getLeaderboard({ window, sort, includeGuests })
+    getLeaderboard({ window, sort, dir, includeGuests })
       .then((r) => {
         if (!cancelled) setRows(r)
       })
@@ -48,7 +50,7 @@ export function BoardScreen({ onOpenPlayer }: { onOpenPlayer: (playerId: string)
     return () => {
       cancelled = true
     }
-  }, [window, sort, includeGuests])
+  }, [window, sort, dir, includeGuests])
 
   return (
     <div className="screen screen--tabbed">
@@ -80,6 +82,14 @@ export function BoardScreen({ onOpenPlayer }: { onOpenPlayer: (playerId: string)
             </option>
           ))}
         </select>
+        <button
+          className="chip"
+          aria-label={dir === 'desc' ? 'Highest first. Tap for lowest first.' : 'Lowest first. Tap for highest first.'}
+          title={dir === 'desc' ? 'Highest first' : 'Lowest first'}
+          onClick={() => setDir(dir === 'desc' ? 'asc' : 'desc')}
+        >
+          {dir === 'desc' ? '↓' : '↑'}
+        </button>
         <label className="chip" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <input
             type="checkbox"

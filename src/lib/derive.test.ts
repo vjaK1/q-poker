@@ -370,6 +370,24 @@ describe('computeLeaderboard', () => {
     expect(rows.map((r) => r.player.id)).toEqual(['alice', 'dave', 'cara'])
   })
 
+  it('ascending net is the exact mirror: biggest loser first', () => {
+    const rows = computeLeaderboard(players, allSessions, allTxs, {
+      window: 'all', sort: 'net', dir: 'asc', includeGuests: false, now,
+    })
+    // nets: Cara −100, Dave 0, Alice +5100
+    expect(rows.map((r) => r.player.id)).toEqual(['cara', 'dave', 'alice'])
+  })
+
+  it('ascending still sinks under-threshold rate rows to the bottom', () => {
+    const rows = computeLeaderboard(players, allSessions, allTxs, {
+      window: 'all', sort: 'winRate', dir: 'asc', includeGuests: false, now,
+    })
+    // Alice is the only row with enough games for a win rate, so she stays on
+    // top even ascending; the null rows keep to the bottom with their net
+    // tiebreak mirrored too (Cara −100 now above Dave 0).
+    expect(rows.map((r) => r.player.id)).toEqual(['alice', 'cara', 'dave'])
+  })
+
   it('month window respects the 3am logical-day rule on both ends', () => {
     const monthPlayers = [player('alice', 'Alice')]
     const sJul = session('sJul', '2026-07-10T09:00:00.000Z') // 19:00 Fri 10 Jul

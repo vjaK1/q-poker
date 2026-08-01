@@ -37,3 +37,5 @@ export interface Tx {
 export type BoardWindow = 'all' | 'last10' | 'month'
 
 export type BoardSort = 'net' | 'hourly' | 'games' | 'hours' | 'winRate'
+
+export type BoardDir = 'desc' | 'asc'
