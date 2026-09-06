@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { buildEvents, summarizeSession } from './derive'
-import { buildSessionsCsv, buildTextExport, buildTransactionsCsv } from './export'
+import {
+  buildSessionsCsv,
+  buildSettleUpText,
+  buildTextExport,
+  buildTransactionsCsv,
+} from './export'
 import { at, play, player, REF_SESSION, referenceTxs, session, tx } from './testUtils'
 import type { Player, Tx } from './types'
 
@@ -150,5 +155,36 @@ describe('CSV exports', () => {
     expect(lines[1]).toBe(
       `csv1,2026-07-24,A,10.00,0,7.50,-2.50,2026-07-24T19:00:00+10:00,2026-07-24T23:00:00+10:00,4.00,false,-2.50`,
     )
+  })
+})
+
+describe('buildSettleUpText', () => {
+  it('lists who pays whom for the reference night, one payment per line', () => {
+    expect(buildSettleUpText(refSummary())).toBe(
+      [
+        'Settle up · Fri 24 Jul',
+        '',
+        'DK pays Doug $37.50',
+        'DK pays Riley $22.50',
+        'Ray pays Wilson $26.00',
+        'Ray pays Riley $11.30',
+        'Ray pays Victor $2.70',
+        'AT pays Victor $20.00',
+        'Ken pays Josh $7.20',
+        'Ken pays Victor $2.00',
+        'Francis pays Josh $4.60',
+      ].join('\n'),
+    )
+  })
+
+  it('an even night says so', () => {
+    const base = '2026-07-24T09:00:00Z'
+    const s = session('even', base)
+    const txs = [
+      ...play('even', base, 'A', { inCents: 1000, outCents: 1000, startMin: 0, endMin: 240 }),
+      ...play('even', base, 'B', { inCents: 1000, outCents: 1000, startMin: 1, endMin: 241 }),
+    ]
+    const text = buildSettleUpText(summarizeSession(s, txs, playersByIdFromNames(['A', 'B'])))
+    expect(text).toBe('Settle up · Fri 24 Jul\n\nNothing to settle')
   })
 })

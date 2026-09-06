@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react'
 import { getSessionDetail, type SessionDetail } from '../lib/ledger'
 import {
   buildSessionsCsv,
+  buildSettleUpText,
   buildTextExport,
   buildTransactionsCsv,
   type TextExportOptions,
 } from '../lib/export'
+import { formatMoney } from '../lib/money'
 import { logicalDayISO, sessionDisplayName } from '../lib/time'
 
 function download(filename: string, content: string) {
@@ -18,7 +20,10 @@ function download(filename: string, content: string) {
   URL.revokeObjectURL(url)
 }
 
-/** Export screen (§5): live text preview with toggles, copy/share, CSV files. */
+/** Which of the two copy buttons is being reported on. */
+type CopyTarget = 'export' | 'settle'
+
+/** Export screen (§5): live text preview with toggles, copy/share, settle-up, CSV files. */
 export function ExportScreen({
   sessionId,
   backLabel,
@@ -35,8 +40,8 @@ export function ExportScreen({
     footer: true,
     sortByNet: false,
   })
-  const [copied, setCopied] = useState(false)
-  const [copyError, setCopyError] = useState<string | null>(null)
+  const [copied, setCopied] = useState<CopyTarget | null>(null)
+  const [copyError, setCopyError] = useState<{ target: CopyTarget; message: string } | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -53,8 +58,8 @@ export function ExportScreen({
   }, [sessionId])
 
   useEffect(() => {
-    if (!copied) return
-    const id = setTimeout(() => setCopied(false), 2000)
+    if (copied === null) return
+    const id = setTimeout(() => setCopied(null), 2000)
     return () => clearTimeout(id)
   }, [copied])
 
@@ -78,8 +83,23 @@ export function ExportScreen({
   }
 
   const text = buildTextExport(detail.summary, opts)
+  // No exact split exists for an unbalanced night, so settle-up waits for the count.
+  const settleText = detail.summary.balanced ? buildSettleUpText(detail.summary) : null
   const day = logicalDayISO(detail.session.startedAt)
   const canShare = typeof navigator.share === 'function'
+
+  const copy = (target: CopyTarget, value: string) => {
+    setCopyError(null)
+    navigator.clipboard
+      .writeText(value)
+      .then(() => setCopied(target))
+      .catch((err: unknown) =>
+        setCopyError({ target, message: err instanceof Error ? err.message : String(err) }),
+      )
+  }
+  const copyErrorFor = (target: CopyTarget) =>
+    copyError !== null &&
+    copyError.target === target && <p className="notice notice--error">{copyError.message}</p>
 
   const toggle = (key: keyof TextExportOptions, label: string) => (
     <label className="row" style={{ cursor: 'pointer' }}>
@@ -112,21 +132,10 @@ export function ExportScreen({
         {toggle('sortByNet', 'Sort by net (off = seat order)')}
       </div>
 
-      <button
-        className="btn btn--primary"
-        onClick={() => {
-          setCopyError(null)
-          navigator.clipboard
-            .writeText(text)
-            .then(() => setCopied(true))
-            .catch((err: unknown) =>
-              setCopyError(err instanceof Error ? err.message : String(err)),
-            )
-        }}
-      >
-        {copied ? 'Copied ✓' : 'Copy to clipboard'}
+      <button className="btn btn--primary" onClick={() => copy('export', text)}>
+        {copied === 'export' ? 'Copied ✓' : 'Copy to clipboard'}
       </button>
-      {copyError !== null && <p className="notice notice--error">{copyError}</p>}
+      {copyErrorFor('export')}
 
       {canShare && (
         <button
@@ -139,6 +148,24 @@ export function ExportScreen({
         >
           Share
         </button>
+      )}
+
+      <h2 className="muted" style={{ margin: 0, fontSize: '0.875rem' }}>
+        Settle up
+      </h2>
+      {settleText !== null ? (
+        <>
+          <pre className="export-pre">{settleText}</pre>
+          <button className="btn" onClick={() => copy('settle', settleText)}>
+            {copied === 'settle' ? 'Copied ✓' : 'Copy settle-up'}
+          </button>
+          {copyErrorFor('settle')}
+        </>
+      ) : (
+        <p className="muted">
+          Fix the count first. This night is off by {formatMoney(detail.summary.discrepancyCents)},
+          so there is no exact way to split it.
+        </p>
       )}
 
       <div className="btn-row">

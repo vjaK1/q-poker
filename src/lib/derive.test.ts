@@ -4,6 +4,7 @@ import {
   computeLeaderboard,
   computePlayerSeries,
   computePlayerStats,
+  computeSettlement,
   computeStreak,
   computeVoidedIds,
   reconcileHint,
@@ -518,5 +519,64 @@ describe('computePlayerStats (Home tiles)', () => {
       rank: null,
       month: { netCents: 0, games: 0 },
     })
+  })
+})
+
+// ------------------------------ settle up ----------------------------------
+
+describe('computeSettlement (who pays whom)', () => {
+  type Net = { playerId: string; netCents: number }
+  const nets = (pairs: Record<string, number>): Net[] =>
+    Object.entries(pairs).map(([playerId, netCents]) => ({ playerId, netCents }))
+
+  /** Payments out minus payments in must cancel every player's net exactly. */
+  function expectClears(input: Net[], transfers: ReturnType<typeof computeSettlement>) {
+    const balance = new Map(input.map((n) => [n.playerId, n.netCents]))
+    for (const t of transfers) {
+      expect(t.amountCents).toBeGreaterThan(0)
+      balance.set(t.fromPlayerId, balance.get(t.fromPlayerId)! + t.amountCents)
+      balance.set(t.toPlayerId, balance.get(t.toPlayerId)! - t.amountCents)
+    }
+    for (const left of balance.values()) expect(left).toBe(0)
+  }
+
+  it('settles the spec reference night in nine direct payments, grouped by payer', () => {
+    const summary = summarizeSession(REF_SESSION, referenceTxs())
+    const transfers = computeSettlement(summary.players)
+    expectClears(summary.players, transfers)
+    expect(transfers.length).toBeLessThanOrEqual(summary.players.length - 1)
+    expect(transfers.map((t) => `${t.fromPlayerId}>${t.toPlayerId}:${t.amountCents}`)).toEqual([
+      'DK>Doug:3750',
+      'DK>Riley:2250',
+      'Ray>Wilson:2600',
+      'Ray>Riley:1130',
+      'Ray>Victor:270',
+      'AT>Victor:2000',
+      'Ken>Josh:720',
+      'Ken>Victor:200',
+      'Francis>Josh:460',
+    ])
+  })
+
+  it('an exact match settles in one payment instead of being split', () => {
+    const input = nets({ A: -2500, B: -2000, C: -500, D: 3000, E: 2000 })
+    const transfers = computeSettlement(input)
+    expectClears(input, transfers)
+    expect(transfers).toHaveLength(3) // plain largest-to-largest would take four
+    expect(transfers).toContainEqual({ fromPlayerId: 'B', toPlayerId: 'E', amountCents: 2000 })
+  })
+
+  it('gives the same list whatever order the nets arrive in', () => {
+    const input = nets({ A: -2500, B: -2000, C: -500, D: 3000, E: 2000 })
+    expect(computeSettlement([...input].reverse())).toEqual(computeSettlement(input))
+  })
+
+  it('an even night has nothing to settle', () => {
+    expect(computeSettlement(nets({ A: 0, B: 0 }))).toEqual([])
+    expect(computeSettlement([])).toEqual([])
+  })
+
+  it('refuses an unbalanced night', () => {
+    expect(() => computeSettlement(nets({ A: -1000, B: 500 }))).toThrow(/balanced/)
   })
 })

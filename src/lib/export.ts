@@ -1,6 +1,11 @@
-import type { LedgerEvent, PlayerSessionSummary, SessionSummary } from './derive'
+import {
+  computeSettlement,
+  type LedgerEvent,
+  type PlayerSessionSummary,
+  type SessionSummary,
+} from './derive'
 import type { Player, Session } from './types'
-import { centsToDollars } from './money'
+import { centsToDollars, formatMoney } from './money'
 import { formatMelbourneISO, logicalDayISO, sessionDisplayName } from './time'
 
 /**
@@ -63,6 +68,23 @@ export function buildTextExport(summary: SessionSummary, opts: TextExportOptions
     )
   }
   return parts.join('\n')
+}
+
+/**
+ * §5.3 settle-up text: who pays whom, one direct payment per line, for the
+ * group chat. Balanced nights only (computeSettlement throws otherwise).
+ */
+export function buildSettleUpText(summary: SessionSummary): string {
+  const nameOf = new Map(summary.players.map((p) => [p.playerId, displayName(p)]))
+  const lines = computeSettlement(summary.players).map(
+    (t) =>
+      `${nameOf.get(t.fromPlayerId)} pays ${nameOf.get(t.toPlayerId)} ${formatMoney(t.amountCents)}`,
+  )
+  return [
+    `Settle up · ${sessionDisplayName(summary.session.startedAt)}`,
+    '',
+    ...(lines.length > 0 ? lines : ['Nothing to settle']),
+  ].join('\n')
 }
 
 // --------------------------------- CSV -------------------------------------

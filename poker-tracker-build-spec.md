@@ -204,6 +204,31 @@ Actions: **Copy to clipboard** (primary, with confirmation toast), **Share** (We
 
 Amounts in dollars with two decimals; timestamps ISO 8601 with Melbourne offset; `denominations` as the raw JSON string.
 
+### 5.3 Settle up (added 2026-09-06)
+
+Below the text export on the same screen: who pays whom, so nobody has to go through the banker.
+
+- Computed from the saved nets by `computeSettlement` (derive.ts): exact-match pairs first (a $20 loser pays a $20 winner directly, never split), then the biggest remaining loser pays the biggest remaining winner until both sides clear. Never more transfers than players minus one; the same nets always give the same list; lines grouped by payer, biggest debt first, biggest payment first.
+- Text: `Settle up · Fri 24 Jul`, blank line, then one payment per line as `{payer} pays {payee} ${amount}` with two decimals. An even night prints `Nothing to settle`.
+- Balanced nights only. Unbalanced: a "Fix the count first" note instead, since no exact split exists.
+- Action: **Copy settle-up** (clipboard only, no share button). No paid-tracking, by decision.
+
+Reference (the §5.1 night):
+
+```
+Settle up · Fri 24 Jul
+
+DK pays Doug $37.50
+DK pays Riley $22.50
+Ray pays Wilson $26.00
+Ray pays Riley $11.30
+Ray pays Victor $2.70
+AT pays Victor $20.00
+Ken pays Josh $7.20
+Ken pays Victor $2.00
+Francis pays Josh $4.60
+```
+
 ## 6. Visual style
 
 Clean and flat: white/dark surfaces, hairline borders, generous spacing, no gradients or shadows. One accent colour for active/live states, green/red strictly for positive/negative money, amber for discrepancy warnings. Large type for money totals. Everything sized for one-handed phone use in bad lighting.

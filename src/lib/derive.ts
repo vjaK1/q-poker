@@ -516,3 +516,74 @@ export function computePlayerStats(
     },
   }
 }
+
+/** One direct payment in a settle-up: `from` pays `to` this many cents. */
+export interface Transfer {
+  fromPlayerId: string
+  toPlayerId: string
+  amountCents: number
+}
+
+/**
+ * Who pays whom (§5.3) so nobody has to go through the banker. Exact-match
+ * pairs settle first (a $20 loser pays a $20 winner directly, never split),
+ * then the biggest remaining loser pays the biggest remaining winner until
+ * both sides are clear. Never more transfers than players minus one; the
+ * same nets always give the same list, grouped by payer with the biggest
+ * debt first. Only defined for a balanced night: the nets must sum to zero.
+ */
+export function computeSettlement(
+  nets: ReadonlyArray<{ playerId: string; netCents: number }>,
+): Transfer[] {
+  if (nets.reduce((sum, n) => sum + n.netCents, 0) !== 0) {
+    throw new Error('Settle-up needs a balanced night')
+  }
+
+  interface Side {
+    id: string
+    left: number
+  }
+  const bySize = (a: Side, b: Side) => b.left - a.left || a.id.localeCompare(b.id)
+  const debtors: Side[] = nets
+    .filter((n) => n.netCents < 0)
+    .map((n) => ({ id: n.playerId, left: -n.netCents }))
+    .sort(bySize)
+  const creditors: Side[] = nets
+    .filter((n) => n.netCents > 0)
+    .map((n) => ({ id: n.playerId, left: n.netCents }))
+    .sort(bySize)
+
+  const out: Transfer[] = []
+  for (const d of debtors) {
+    const c = creditors.find((x) => x.left === d.left)
+    if (c) {
+      out.push({ fromPlayerId: d.id, toPlayerId: c.id, amountCents: d.left })
+      d.left = 0
+      c.left = 0
+    }
+  }
+
+  const ds = debtors.filter((d) => d.left > 0)
+  const cs = creditors.filter((c) => c.left > 0)
+  let i = 0
+  let j = 0
+  while (i < ds.length && j < cs.length) {
+    const d = ds[i]
+    const c = cs[j]
+    const amount = Math.min(d.left, c.left)
+    out.push({ fromPlayerId: d.id, toPlayerId: c.id, amountCents: amount })
+    d.left -= amount
+    c.left -= amount
+    if (d.left === 0) i += 1
+    if (c.left === 0) j += 1
+  }
+
+  // Each payer's lines together, biggest debt first, biggest payment first.
+  const payerOrder = new Map(debtors.map((d, idx) => [d.id, idx]))
+  return out.sort(
+    (a, b) =>
+      payerOrder.get(a.fromPlayerId)! - payerOrder.get(b.fromPlayerId)! ||
+      b.amountCents - a.amountCents ||
+      a.toPlayerId.localeCompare(b.toPlayerId),
+  )
+}
