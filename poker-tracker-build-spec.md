@@ -81,7 +81,7 @@ Three bottom tabs: **Home**, **Sessions**, **Board**. Settings via gear icon in 
 
 **Idle state** (no live session):
 - Header: "Home" + today's date, gear icon.
-- Your bankroll card: lifetime net + small cumulative-P/L sparkline, plus a "this month" line (your net and games this Melbourne calendar month, 3am rule: the Board's Month window).
+- Your bankroll card: lifetime net + the bankroll chart (§4.8, same touch readout at a smaller height), plus a "this month" line (your net and games this Melbourne calendar month, 3am rule: the Board's Month window).
 - Stat grid, six tiles (2026-09-06; replaced the original Last session card and top-3 Leaderboard preview, which duplicated their own tabs): Win rate (nights up ÷ games, a $0 night is a game but not a win; "5+ games" under the rate threshold), Average night (mean net per game, whole cents), Best night and Worst night (each with its date; the earliest night keeps a tie), Streak (the Board's streak rule), Rank (position on the all-time net Board with guests hidden; guests read "Unranked").
 - Buy-in based personal stats (average buy-in, return, bust rate, rebuys) are deliberately absent: the backfilled 2026 history carries synthesized buy-in/cash-out detail, only its nets are exact.
 - Primary button: **Start session**.
@@ -143,7 +143,7 @@ Shown when all players are counted:
 - Sort selector: net P/L (default), $/hr, games played, hours played, win rate.
 - Ranked rows: rank, name, sub-line "23 games · 71h", right-aligned net (green/red).
 - Footnote: "Rate stats need 5+ games." Guests (`is_guest`) excluded by default with a toggle to include.
-- Tap a player → **profile**: avatar/initials, sessions count, cumulative bankroll line chart across sessions, stat cards (win rate, $/hr, best night, current streak, total hours, total rebuys).
+- Tap a player → **profile**: avatar/initials, sessions count, the bankroll chart (2026-09-06: one step per game along the bottom with dates, whole-dollar gridlines with a stronger $0 line, and a touch or hover readout above the plot showing the date, that night's net and the bankroll after it; idle, the readout shows the latest game), stat cards (win rate, $/hr, best night, current streak, total hours, total rebuys).
 
 ### 4.9 Settings (gear from Home)
 

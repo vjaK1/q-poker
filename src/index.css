@@ -733,6 +733,44 @@ button.row {
   color: var(--muted);
 }
 
+/* bankroll chart (Home card and player profile) */
+
+.bankroll-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+/* pan-y keeps vertical page scrolling alive; a sideways drag scrubs the chart */
+.bankroll-chart svg {
+  display: block;
+  width: 100%;
+  touch-action: pan-y;
+  cursor: crosshair;
+}
+
+.chart-label {
+  font-size: 11px;
+  fill: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-readout {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-readout strong {
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
 /* board net bar chart */
 
 .netbar-row {

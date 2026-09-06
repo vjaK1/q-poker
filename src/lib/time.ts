@@ -42,6 +42,12 @@ export function sessionDisplayName(startedAt: string | Date): string {
   return dayNameFromISO(logicalDayISO(startedAt))
 }
 
+/** Short axis date for the bankroll chart, e.g. "24 Jul" (Melbourne, 3am rule). */
+export function sessionShortDate(startedAt: string | Date): string {
+  const [, m, d] = logicalDayISO(startedAt).split('-').map(Number)
+  return `${d} ${MONTHS[m - 1]}`
+}
+
 /** Plain Melbourne calendar date name, no 3am shift. For the Home header. */
 export function melbourneDayName(ts: string | Date): string {
   return dayNameFromISO(calendarISO(toInstant(ts)))

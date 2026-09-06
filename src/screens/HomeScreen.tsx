@@ -15,7 +15,7 @@ import {
   sessionDisplayName,
 } from '../lib/time'
 import { useNow } from '../hooks/useNow'
-import { Sparkline } from '../components/Sparkline'
+import { BankrollChart } from '../components/BankrollChart'
 
 interface StatTile {
   label: string
@@ -180,7 +180,7 @@ export function HomeScreen({
             >
               {formatSignedMoney(me?.lifetimeNetCents ?? 0)}
             </div>
-            {me && me.cumulative.length >= 2 && <Sparkline values={[0, ...me.cumulative]} />}
+            {me && me.series.length >= 1 && <BankrollChart series={me.series} height={120} />}
             {me && <span className="row-sub">{monthLine(me.stats.month)}</span>}
           </>
         )}

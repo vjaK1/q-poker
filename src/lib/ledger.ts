@@ -441,7 +441,7 @@ export async function getSessionsOverview(): Promise<SessionOverviewRow[]> {
 /** Everything the Home dashboard needs in one fetch. */
 export interface HomeData {
   /** null when no "this is me" player is set. */
-  me: { lifetimeNetCents: number; cumulative: number[]; stats: PlayerStats } | null
+  me: { lifetimeNetCents: number; series: PlayerSeriesPoint[]; stats: PlayerStats } | null
 }
 
 export async function getHomeData(myPlayerId: string | null): Promise<HomeData> {
@@ -457,7 +457,7 @@ export async function getHomeData(myPlayerId: string | null): Promise<HomeData> 
   return {
     me: {
       lifetimeNetCents: series.at(-1)?.cumulativeCents ?? 0,
-      cumulative: series.map((p) => p.cumulativeCents),
+      series,
       stats: computePlayerStats(myPlayerId, players, sessions, txs, new Date()),
     },
   }

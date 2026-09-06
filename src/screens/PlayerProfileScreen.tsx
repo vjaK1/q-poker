@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getPlayerProfile, RATE_STAT_MIN_SESSIONS, type PlayerProfile } from '../lib/ledger'
-import { formatMoney, formatSignedMoney } from '../lib/money'
-import { Sparkline } from '../components/Sparkline'
+import { formatSignedMoney } from '../lib/money'
+import { BankrollChart } from '../components/BankrollChart'
 import { hoursLabel } from './BoardScreen'
 
 function initials(name: string): string {
@@ -118,14 +118,10 @@ export function PlayerProfileScreen({
         )}
       </div>
 
-      {series.length >= 2 && (
+      {series.length >= 1 && (
         <div className="card">
-          <span className="muted">Bankroll across sessions</span>
-          <Sparkline values={[0, ...series.map((p) => p.cumulativeCents)]} height={120} showZeroLine />
-          <div className="footer-stats muted">
-            <span>{formatMoney(0)}</span>
-            <span>now {formatSignedMoney(series.at(-1)!.cumulativeCents)}</span>
-          </div>
+          <span className="muted">Bankroll after each game</span>
+          <BankrollChart series={series} height={180} />
         </div>
       )}
 
