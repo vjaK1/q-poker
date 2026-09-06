@@ -665,6 +665,64 @@ button.row {
   font-variant-numeric: tabular-nums;
 }
 
+/* Who are you? (§4.10): the name list scrolls inside the screen so Continue
+   never hides beneath forty names. */
+
+.screen--fill {
+  min-height: 100dvh;
+  box-sizing: border-box;
+  padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+}
+
+.picker-search {
+  flex: 0 0 auto;
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.picker-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.row--picked {
+  background: var(--raise);
+}
+
+.picker-tick {
+  color: var(--accent);
+  font-weight: 700;
+  opacity: 0;
+}
+
+.row--picked .picker-tick {
+  opacity: 1;
+}
+
+.picker-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.btn--quiet {
+  align-self: center;
+  width: auto;
+  min-height: 40px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.picker-hint {
+  text-align: center;
+  margin: 0;
+}
+
 /* A tile with nothing to show yet ("5+ games", "No games yet"): the quiet
    body face, so a placeholder never masquerades as a number. */
 .stat-value--empty {

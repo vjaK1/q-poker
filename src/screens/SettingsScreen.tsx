@@ -21,15 +21,23 @@ const THEMES: Array<{ key: ThemePref; label: string }> = [
   { key: 'system', label: 'Match phone' },
 ]
 
-/** Settings (§4.9): theme, default buy-in, denominations, players, identity. */
-export function SettingsScreen({ email, onBack }: { email: string | null; onBack: () => void }) {
+/** Settings (§4.9): who you are, theme, default buy-in, denominations, players. */
+export function SettingsScreen({
+  email,
+  onBack,
+  onPickMe,
+}: {
+  email: string | null
+  onBack: () => void
+  onPickMe: () => void
+}) {
   const [theme, setTheme] = useState(getThemePref())
   const [buyInText, setBuyInText] = useState(centsToDollars(getSettings().defaultBuyInCents))
   const [buyInError, setBuyInError] = useState<string | null>(null)
   const [denoms, setDenoms] = useState(getSettings().denominationsCents)
   const [newDenomText, setNewDenomText] = useState('')
   const [denomError, setDenomError] = useState<string | null>(null)
-  const [myPlayerId, setMyPlayerId] = useState(getSettings().myPlayerId)
+  const [myPlayerId] = useState(getSettings().myPlayerId)
   const [players, setPlayers] = useState<Player[] | null>(null)
   const [editing, setEditing] = useState<Player | null>(null)
   const [newPlayerName, setNewPlayerName] = useState('')
@@ -85,6 +93,27 @@ export function SettingsScreen({ email, onBack }: { email: string | null; onBack
         <span className="screen-title">Settings</span>
         <span style={{ width: '4.5rem' }} />
       </header>
+
+      <div className="card">
+        <span className="muted">You</span>
+        <div className="btn-row" style={{ alignItems: 'center' }}>
+          <span className="row-main">
+            <span className="row-title">
+              {myPlayerId === null
+                ? 'Nobody picked yet'
+                : (players?.find((p) => p.id === myPlayerId)?.name ?? '…')}
+            </span>
+            <span className="row-sub">
+              {myPlayerId === null
+                ? 'Home shows your numbers once you pick your name'
+                : 'Home and Sessions show your numbers'}
+            </span>
+          </span>
+          <button className="btn btn--small" onClick={onPickMe}>
+            {myPlayerId === null ? 'Pick your name' : 'Change'}
+          </button>
+        </div>
+      </div>
 
       <div className="card">
         <span className="muted">Theme</span>
@@ -208,13 +237,8 @@ export function SettingsScreen({ email, onBack }: { email: string | null; onBack
       {editing && (
         <PlayerEditSheet
           player={editing}
-          isMe={editing.id === myPlayerId}
           onClose={() => setEditing(null)}
-          onSaved={async (updated, makeMe) => {
-            if (makeMe !== null) {
-              setSettings({ myPlayerId: makeMe ? updated.id : null })
-              setMyPlayerId(makeMe ? updated.id : null)
-            }
+          onSaved={async () => {
             setEditing(null)
             await reloadPlayers()
           }}
@@ -224,20 +248,21 @@ export function SettingsScreen({ email, onBack }: { email: string | null; onBack
   )
 }
 
+/**
+ * Rename, guest flag, archive. "This is me" is deliberately not here any more:
+ * that lives on the Who are you? screen (§4.10), reached from the You card.
+ */
 function PlayerEditSheet({
   player,
-  isMe,
   onClose,
   onSaved,
 }: {
   player: Player
-  isMe: boolean
   onClose: () => void
-  onSaved: (player: Player, makeMe: boolean | null) => Promise<void>
+  onSaved: (player: Player) => Promise<void>
 }) {
   const [name, setName] = useState(player.name)
   const [isGuest, setIsGuest] = useState(player.isGuest)
-  const [me, setMe] = useState(isMe)
   const { busy, error, run } = useBusy()
 
   return (
@@ -255,10 +280,6 @@ function PlayerEditSheet({
         <input type="checkbox" checked={isGuest} onChange={(e) => setIsGuest(e.target.checked)} />
         Guest (hidden from the leaderboard by default)
       </label>
-      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <input type="checkbox" checked={me} onChange={(e) => setMe(e.target.checked)} />
-        This is me
-      </label>
       <button
         className="btn btn--primary"
         disabled={busy || !name.trim()}
@@ -267,7 +288,7 @@ function PlayerEditSheet({
             let updated = player
             if (name.trim() !== player.name) updated = await renamePlayer(player.id, name)
             if (isGuest !== player.isGuest) updated = await setPlayerGuest(player.id, isGuest)
-            await onSaved(updated, me !== isMe ? me : null)
+            await onSaved(updated)
           })
         }
       >
@@ -281,7 +302,7 @@ function PlayerEditSheet({
             const updated = player.archivedAt
               ? await unarchivePlayer(player.id)
               : await archivePlayer(player.id)
-            await onSaved(updated, null)
+            await onSaved(updated)
           })
         }
       >

@@ -103,12 +103,14 @@ export function HomeScreen({
   onStart,
   onResume,
   onSettings,
+  onPickMe,
 }: {
   live: LiveSessionState | null
   savedNote: string | null
   onStart: () => void
   onResume: () => void
   onSettings: () => void
+  onPickMe: () => void
 }) {
   const now = useNow(30_000)
   const [myPlayerId] = useState(getSettings().myPlayerId)
@@ -165,9 +167,9 @@ export function HomeScreen({
         <span className="muted">Your bankroll</span>
         {myPlayerId === null ? (
           <>
-            <p>Pick who you are to see your lifetime numbers.</p>
-            <button className="btn" onClick={onSettings}>
-              This is me…
+            <p>Pick your name to see your lifetime numbers.</p>
+            <button className="btn" onClick={onPickMe}>
+              Pick your name
             </button>
           </>
         ) : (

@@ -14,7 +14,9 @@ import { ExportScreen } from './screens/ExportScreen'
 import { BoardScreen } from './screens/BoardScreen'
 import { PlayerProfileScreen } from './screens/PlayerProfileScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
+import { WhoAreYouScreen } from './screens/WhoAreYouScreen'
 import { TabBar } from './components/TabBar'
+import { getSettings } from './lib/settings'
 
 export default function App() {
   return isSupabaseConfigured ? <AuthedApp /> : <SetupScreen />
@@ -66,6 +68,7 @@ type View =
   | { name: 'board' }
   | { name: 'playerProfile'; playerId: string }
   | { name: 'settings' }
+  | { name: 'whoami'; from: 'signin' | 'home' | 'settings' }
 
 // The count queue (who was seated when "End session" was tapped) survives an
 // app reload via localStorage; the fallback is whoever is seated now.
@@ -97,8 +100,25 @@ function SessionApp({ email }: { email: string | null }) {
   }, [])
 
   useEffect(() => {
-    void refresh().finally(() => setLoading(false))
-  }, [refresh])
+    // First load decides the opening screen: a phone that has never picked
+    // "this is me" gets Who are you? (§4.10), unless a game is live, in which
+    // case the table comes first and Home offers the picker afterwards.
+    void (async () => {
+      try {
+        const state = await getLiveSessionState()
+        setLive(state)
+        setLoadError(null)
+        const settings = getSettings()
+        if (state === null && settings.myPlayerId === null && !settings.whoAmIDismissed) {
+          setView({ name: 'whoami', from: 'signin' })
+        }
+      } catch (err) {
+        setLoadError(err instanceof Error ? err.message : String(err))
+      } finally {
+        setLoading(false)
+      }
+    })()
+  }, [])
 
   if (loading) {
     return (
@@ -164,6 +184,7 @@ function SessionApp({ email }: { email: string | null }) {
               setView(live?.session.status === 'counting' ? { name: 'count' } : { name: 'live' })
             }
             onSettings={() => setView({ name: 'settings' })}
+            onPickMe={() => setView({ name: 'whoami', from: 'home' })}
           />
           {tabBar('home')}
         </>
@@ -198,7 +219,22 @@ function SessionApp({ email }: { email: string | null }) {
       )
 
     case 'settings':
-      return <SettingsScreen email={email} onBack={goHome} />
+      return (
+        <SettingsScreen
+          email={email}
+          onBack={goHome}
+          onPickMe={() => setView({ name: 'whoami', from: 'settings' })}
+        />
+      )
+
+    case 'whoami': {
+      const { from } = effective
+      return (
+        <WhoAreYouScreen
+          onDone={() => setView(from === 'settings' ? { name: 'settings' } : { name: 'home' })}
+        />
+      )
+    }
 
     case 'sessionDetail':
       return (

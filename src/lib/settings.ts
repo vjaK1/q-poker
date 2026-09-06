@@ -10,6 +10,12 @@ export interface Settings {
   denominationsCents: number[]
   /** Which players row is "you" (drives Your bankroll / your net). */
   myPlayerId: string | null
+  /**
+   * Set when the first-login "Who are you?" screen (§4.10) was dismissed with
+   * Not now. It then never auto-shows again on this phone; Home keeps a
+   * Pick your name button and Settings a Change button instead.
+   */
+  whoAmIDismissed: boolean
 }
 
 const DEFAULTS: Settings = {
@@ -17,6 +23,7 @@ const DEFAULTS: Settings = {
   // $10, $1.00, $0.25, $0.05 (Victor's game; editable UI arrives in milestone 6)
   denominationsCents: [1000, 100, 25, 5],
   myPlayerId: null,
+  whoAmIDismissed: false,
 }
 
 const STORAGE_KEY = 'qpoker.settings'
@@ -38,6 +45,7 @@ export function getSettings(): Settings {
           ? parsed.denominationsCents
           : [...DEFAULTS.denominationsCents],
       myPlayerId: typeof parsed.myPlayerId === 'string' ? parsed.myPlayerId : null,
+      whoAmIDismissed: parsed.whoAmIDismissed === true,
     }
   } catch {
     return { ...DEFAULTS }

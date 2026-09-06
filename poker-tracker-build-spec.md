@@ -150,6 +150,17 @@ Shown when all players are counted:
 - **Default buy-in** (default $10.00).
 - **Chip denominations** (default 100, 25, 5 cents) — drives the cash-out steppers.
 - **Players:** add, rename, toggle guest, archive. (Rename is a `players` update; the append-only rule applies to `transactions` only.)
+- **You** (2026-09-06): the card at the top shows who this phone is, with **Change** (or **Pick your name**) opening §4.10.
+
+### 4.10 First login: Who are you? (added 2026-09-06)
+
+The "this is me" choice used to be a checkbox inside the player edit sheet, which the first mate to sign in found unclear. Now:
+
+- After signing in, a phone with no "me" picked (and no live session in progress) shows a full-screen **Who are you?**: a search box, the non-archived players (guests marked), tap a name, then **Continue as {name}**. It lands on Home already showing that player's numbers.
+- **Not now** is remembered locally (`whoAmIDismissed`), so the screen never auto-shows again on that phone. Home's bankroll card keeps a **Pick your name** button and Settings has the **You** card; both open the same screen.
+- No creating players from this screen (a wrong pick is fixable, a duplicate profile is not): "Not in the list? Ask whoever runs the game to add you."
+- The "This is me" checkbox is gone from the player edit sheet, so there is exactly one way to do this.
+- Still localStorage per phone; no database change.
 
 ## 5. Exports
 
