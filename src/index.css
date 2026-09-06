@@ -665,6 +665,16 @@ button.row {
   font-variant-numeric: tabular-nums;
 }
 
+/* A tile with nothing to show yet ("5+ games", "No games yet"): the quiet
+   body face, so a placeholder never masquerades as a number. */
+.stat-value--empty {
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+
 /* board net bar chart */
 
 .netbar-row {

@@ -4,10 +4,12 @@ import {
   buildEvents,
   computeLeaderboard,
   computePlayerSeries,
+  computePlayerStats,
   summarizeSession,
   type LeaderboardRow,
   type LedgerEvent,
   type PlayerSeriesPoint,
+  type PlayerStats,
   type SessionSummary,
 } from './derive'
 import type {
@@ -39,7 +41,7 @@ export type {
   Tx,
   TxType,
 }
-export type { LeaderboardRow, LedgerEvent, PlayerSeriesPoint, SessionSummary }
+export type { LeaderboardRow, LedgerEvent, PlayerSeriesPoint, PlayerStats, SessionSummary }
 export type { PlayerSessionSummary, ReconcileHint } from './derive'
 export { RATE_STAT_MIN_SESSIONS, reconcileHint, seatedPlayerIds } from './derive'
 
@@ -438,49 +440,27 @@ export async function getSessionsOverview(): Promise<SessionOverviewRow[]> {
 
 /** Everything the Home dashboard needs in one fetch. */
 export interface HomeData {
-  top3: LeaderboardRow[]
   /** null when no "this is me" player is set. */
-  me: { lifetimeNetCents: number; cumulative: number[] } | null
-  lastSession: { session: Session; myNetCents: number | null } | null
+  me: { lifetimeNetCents: number; cumulative: number[]; stats: PlayerStats } | null
 }
 
 export async function getHomeData(myPlayerId: string | null): Promise<HomeData> {
+  // Every number on Home is personal, so a phone that hasn't picked
+  // "this is me" yet has nothing to fetch.
+  if (myPlayerId === null) return { me: null }
   const [players, sessions, txs] = await Promise.all([
     listPlayers(true),
     listSessions(),
     fetchAllTxs(),
   ])
-  const top3 = computeLeaderboard(players, sessions, txs, {
-    window: 'all',
-    sort: 'net',
-    includeGuests: false,
-    now: new Date(),
-  }).slice(0, 3)
-
-  const saved = sessions
-    .filter((s) => s.status === 'saved')
-    .sort((a, b) => a.startedAt.localeCompare(b.startedAt))
-  const last = saved.at(-1) ?? null
-  let lastSession: HomeData['lastSession'] = null
-  if (last) {
-    const summary = summarizeSession(
-      last,
-      txs.filter((t) => t.sessionId === last.id),
-    )
-    const mine =
-      myPlayerId !== null ? summary.players.find((p) => p.playerId === myPlayerId) : undefined
-    lastSession = { session: last, myNetCents: mine ? mine.netCents : null }
-  }
-
-  let me: HomeData['me'] = null
-  if (myPlayerId !== null) {
-    const series = computePlayerSeries(myPlayerId, sessions, txs)
-    me = {
+  const series = computePlayerSeries(myPlayerId, sessions, txs)
+  return {
+    me: {
       lifetimeNetCents: series.at(-1)?.cumulativeCents ?? 0,
       cumulative: series.map((p) => p.cumulativeCents),
-    }
+      stats: computePlayerStats(myPlayerId, players, sessions, txs, new Date()),
+    },
   }
-  return { top3, me, lastSession }
 }
 
 /** Board profile: lifetime stats plus the cumulative bankroll series. */

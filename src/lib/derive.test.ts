@@ -3,6 +3,7 @@ import {
   buildEvents,
   computeLeaderboard,
   computePlayerSeries,
+  computePlayerStats,
   computeStreak,
   computeVoidedIds,
   reconcileHint,
@@ -413,5 +414,109 @@ describe('computeLeaderboard', () => {
       window: 'month', sort: 'net', includeGuests: false, now: augustEvening,
     })
     expect(augustRows[0].games).toBe(1) // sAug only
+  })
+})
+
+// ---------------------------- home stats -----------------------------------
+
+describe('computePlayerStats (Home tiles)', () => {
+  const players = [
+    player('alice', 'Alice'),
+    player('bob', 'Bob', true),
+    player('cara', 'Cara'),
+    player('dave', 'Dave'),
+  ]
+
+  // Saved Friday nights at 19:00 Melbourne (09:00Z), except sEdge: 02:30 on
+  // Mon 1 Jun Melbourne, which the 3am rule files under Sun 31 May.
+  const nights: Array<{ id: string; startedAt: string; nets: Record<string, number> }> = [
+    { id: 's1', startedAt: '2026-05-01T09:00:00.000Z', nets: { alice: 2000, bob: 5000, dave: -100 } },
+    { id: 's2', startedAt: '2026-05-08T09:00:00.000Z', nets: { alice: -1000, dave: -100 } },
+    { id: 's3', startedAt: '2026-05-15T09:00:00.000Z', nets: { alice: 0, dave: -100 } },
+    { id: 's4', startedAt: '2026-05-22T09:00:00.000Z', nets: { alice: 2000, dave: -100 } },
+    { id: 'sEdge', startedAt: '2026-05-31T16:30:00.000Z', nets: { alice: 999 } },
+    { id: 's5', startedAt: '2026-06-05T09:00:00.000Z', nets: { alice: 500, cara: 100, dave: -100 } },
+    { id: 's6', startedAt: '2026-06-12T09:00:00.000Z', nets: { alice: -300, cara: 100, dave: -100 } },
+  ]
+  const sessions = nights.map((n) => session(n.id, n.startedAt))
+  const txs = nights.flatMap((n) =>
+    Object.entries(n.nets).flatMap(([pid, net], i) => {
+      const inCents = net >= 0 ? 1000 : 1000 * Math.ceil(-net / 1000)
+      return play(n.id, n.startedAt, pid, {
+        inCents,
+        outCents: inCents + net,
+        startMin: i,
+        endMin: 240 + i,
+      })
+    }),
+  )
+  // Ignored everywhere: a live night and a discarded one, both with silly numbers.
+  const liveNight = session('liveX', '2026-06-19T09:00:00.000Z', 'live')
+  const discardedNight = session('discX', '2026-06-13T09:00:00.000Z', 'discarded')
+  const allSessions = [...sessions, liveNight, discardedNight]
+  const allTxs = [
+    ...txs,
+    ...play('liveX', liveNight.startedAt, 'alice', { inCents: 100000, outCents: 0, startMin: 0, endMin: 60 }),
+    ...play('discX', discardedNight.startedAt, 'alice', { inCents: 100000, outCents: 0, startMin: 0, endMin: 60 }),
+  ]
+  const now = new Date('2026-06-20T12:00:00Z') // 22:00 Sat 20 Jun, Melbourne
+  const stats = (id: string) => computePlayerStats(id, players, allSessions, allTxs, now)
+
+  it('counts games and wins over saved nights only; a $0 night is a game, not a win', () => {
+    const alice = stats('alice')
+    expect(alice.games).toBe(7)
+    expect(alice.wins).toBe(4)
+    expect(alice.winRatePct).toBeCloseTo((4 / 7) * 100, 5)
+  })
+
+  it('average night is the mean net, rounded to whole cents', () => {
+    expect(stats('alice').avgNightCents).toBe(600) // 4199 / 7 = 599.86
+    expect(stats('dave').avgNightCents).toBe(-100)
+  })
+
+  it('best and worst nights carry their session; the earliest night keeps a tie', () => {
+    const alice = stats('alice')
+    expect(alice.bestNight).toMatchObject({ netCents: 2000, session: { id: 's1' } }) // s4 ties, s1 was first
+    expect(alice.worstNight).toMatchObject({ netCents: -1000, session: { id: 's2' } })
+  })
+
+  it('streak follows the Board rule', () => {
+    expect(stats('alice').streak).toBe(-1)
+    expect(stats('cara').streak).toBe(2)
+    expect(stats('dave').streak).toBe(-6)
+  })
+
+  it('rank is the all-time net Board with guests hidden', () => {
+    expect(stats('alice').rank).toEqual({ position: 1, of: 3 })
+    expect(stats('cara').rank).toEqual({ position: 2, of: 3 })
+    expect(stats('dave').rank).toEqual({ position: 3, of: 3 })
+    const bob = stats('bob')
+    expect(bob.games).toBe(1)
+    expect(bob.rank).toBeNull() // guests play, but never rank
+  })
+
+  it('this month follows the Melbourne 3am rule', () => {
+    // sEdge (02:30 on 1 Jun) is a May night, so June is s5 + s6 only.
+    expect(stats('alice').month).toEqual({ netCents: 200, games: 2 })
+    expect(stats('dave').month).toEqual({ netCents: -200, games: 2 })
+  })
+
+  it('rate stats wait for the session threshold; a stranger gets empty stats', () => {
+    const cara = stats('cara')
+    expect(cara.games).toBe(2)
+    expect(cara.winRatePct).toBeNull()
+    expect(cara.avgNightCents).toBe(100)
+
+    expect(stats('zed')).toEqual({
+      games: 0,
+      wins: 0,
+      winRatePct: null,
+      avgNightCents: null,
+      bestNight: null,
+      worstNight: null,
+      streak: 0,
+      rank: null,
+      month: { netCents: 0, games: 0 },
+    })
   })
 })

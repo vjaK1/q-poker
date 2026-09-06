@@ -439,3 +439,80 @@ function sortRows(rows: LeaderboardRow[], sort: BoardSort, dir: BoardDir): Leade
     return sign * (kb - ka) || tieBreak(a, b)
   })
 }
+
+/** Personal stats for the Home dashboard (§4.1). */
+export interface PlayerStats {
+  /** Saved sessions where this player put money on the table. */
+  games: number
+  /** Nights finished above $0; a $0 night is a game but not a win. */
+  wins: number
+  /** 0–100; null under RATE_STAT_MIN_SESSIONS, the same rule as the Board. */
+  winRatePct: number | null
+  /** Mean net per game, rounded to whole cents; null with no games. */
+  avgNightCents: number | null
+  /** Biggest win and biggest loss; the earliest night keeps a tie. */
+  bestNight: { netCents: number; session: Session } | null
+  worstNight: { netCents: number; session: Session } | null
+  /** computeStreak semantics: +n wins running, −n losses running, 0 none. */
+  streak: number
+  /**
+   * 1-based position on the all-time net Board with guests hidden, and how
+   * many players are ranked; null for guests and for anyone with no games.
+   */
+  rank: { position: number; of: number } | null
+  /** This Melbourne calendar month (3am rule): the Board's "Month" window. */
+  month: { netCents: number; games: number }
+}
+
+export function computePlayerStats(
+  playerId: string,
+  players: Player[],
+  sessions: Session[],
+  txs: Tx[],
+  now: Date,
+): PlayerStats {
+  const series = computePlayerSeries(playerId, sessions, txs)
+  const nets = series.map((p) => p.netCents)
+  const games = series.length
+  const wins = nets.filter((n) => n > 0).length
+
+  let bestNight: PlayerStats['bestNight'] = null
+  let worstNight: PlayerStats['worstNight'] = null
+  for (const p of series) {
+    if (bestNight === null || p.netCents > bestNight.netCents) {
+      bestNight = { netCents: p.netCents, session: p.session }
+    }
+    if (worstNight === null || p.netCents < worstNight.netCents) {
+      worstNight = { netCents: p.netCents, session: p.session }
+    }
+  }
+
+  const currentMonth = logicalDayISO(now).slice(0, 7)
+  const thisMonth = series.filter(
+    (p) => logicalDayISO(p.session.startedAt).slice(0, 7) === currentMonth,
+  )
+
+  const board = computeLeaderboard(players, sessions, txs, {
+    window: 'all',
+    sort: 'net',
+    includeGuests: false,
+    now,
+  })
+  const position = board.findIndex((r) => r.player.id === playerId)
+
+  return {
+    games,
+    wins,
+    winRatePct: games >= RATE_STAT_MIN_SESSIONS ? (wins / games) * 100 : null,
+    // A derived statistic, not stored money: rounded here, like $/hr is on display.
+    avgNightCents: games > 0 ? Math.round(nets.reduce((sum, n) => sum + n, 0) / games) : null,
+    bestNight,
+    worstNight,
+    streak: computeStreak(nets),
+    rank: position === -1 ? null : { position: position + 1, of: board.length },
+    month: {
+      netCents: thisMonth.reduce((sum, p) => sum + p.netCents, 0),
+      games: thisMonth.length,
+    },
+  }
+}

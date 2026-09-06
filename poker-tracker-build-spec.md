@@ -81,9 +81,9 @@ Three bottom tabs: **Home**, **Sessions**, **Board**. Settings via gear icon in 
 
 **Idle state** (no live session):
 - Header: "Home" + today's date, gear icon.
-- Your bankroll card: lifetime net + small cumulative-P/L sparkline.
-- Last session card: derived date name + your net.
-- Leaderboard preview: top 3 by net, tap → Board tab.
+- Your bankroll card: lifetime net + small cumulative-P/L sparkline, plus a "this month" line (your net and games this Melbourne calendar month, 3am rule: the Board's Month window).
+- Stat grid, six tiles (2026-09-06; replaced the original Last session card and top-3 Leaderboard preview, which duplicated their own tabs): Win rate (nights up ÷ games, a $0 night is a game but not a win; "5+ games" under the rate threshold), Average night (mean net per game, whole cents), Best night and Worst night (each with its date; the earliest night keeps a tie), Streak (the Board's streak rule), Rank (position on the all-time net Board with guests hidden; guests read "Unranked").
+- Buy-in based personal stats (average buy-in, return, bust rate, rebuys) are deliberately absent: the backfilled 2026 history carries synthesized buy-in/cash-out detail, only its nets are exact.
 - Primary button: **Start session**.
 
 **Live state** (a session with `status = 'live'` or `'counting'` exists):

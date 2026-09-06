@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react'
-import { getHomeData, type HomeData, type LiveSessionState } from '../lib/ledger'
+import {
+  getHomeData,
+  RATE_STAT_MIN_SESSIONS,
+  type HomeData,
+  type LiveSessionState,
+  type PlayerStats,
+} from '../lib/ledger'
 import { getSettings } from '../lib/settings'
 import { formatMoney, formatSignedMoney } from '../lib/money'
 import {
@@ -11,20 +17,97 @@ import {
 import { useNow } from '../hooks/useNow'
 import { Sparkline } from '../components/Sparkline'
 
+interface StatTile {
+  label: string
+  value: string
+  /** Quiet second line under the value. */
+  sub?: string
+  /** 'pos' / 'neg' colour the value; 'empty' is a placeholder in body type. */
+  tone?: 'pos' | 'neg' | 'empty'
+}
+
+function signTone(cents: number): 'pos' | 'neg' | undefined {
+  if (cents > 0) return 'pos'
+  if (cents < 0) return 'neg'
+  return undefined
+}
+
+function plural(n: number, one: string, many: string): string {
+  return `${n} ${n === 1 ? one : many}`
+}
+
+/** The six personal tiles under the bankroll (§4.1). */
+function statTiles(stats: PlayerStats): StatTile[] {
+  const { games, wins, streak, rank, bestNight, worstNight } = stats
+  return [
+    {
+      label: 'Win rate',
+      value:
+        stats.winRatePct !== null
+          ? `${Math.round(stats.winRatePct)}%`
+          : `${RATE_STAT_MIN_SESSIONS}+ games`,
+      sub: games > 0 ? `${wins} of ${plural(games, 'night', 'nights')}` : undefined,
+      tone: stats.winRatePct === null ? 'empty' : undefined,
+    },
+    {
+      label: 'Average night',
+      value: stats.avgNightCents !== null ? formatSignedMoney(stats.avgNightCents) : 'No games yet',
+      sub: games > 0 ? `over ${plural(games, 'game', 'games')}` : undefined,
+      tone: stats.avgNightCents !== null ? signTone(stats.avgNightCents) : 'empty',
+    },
+    {
+      label: 'Best night',
+      value: bestNight ? formatSignedMoney(bestNight.netCents) : 'No games yet',
+      sub: bestNight ? sessionDisplayName(bestNight.session.startedAt) : undefined,
+      tone: bestNight ? signTone(bestNight.netCents) : 'empty',
+    },
+    {
+      label: 'Worst night',
+      value: worstNight ? formatSignedMoney(worstNight.netCents) : 'No games yet',
+      sub: worstNight ? sessionDisplayName(worstNight.session.startedAt) : undefined,
+      tone: worstNight ? signTone(worstNight.netCents) : 'empty',
+    },
+    {
+      label: 'Streak',
+      value:
+        streak > 0
+          ? plural(streak, 'win', 'wins')
+          : streak < 0
+            ? plural(-streak, 'loss', 'losses')
+            : 'None',
+      sub: streak !== 0 ? 'in a row' : games > 0 ? 'last night was even' : 'no games yet',
+      tone: streak > 0 ? 'pos' : streak < 0 ? 'neg' : 'empty',
+    },
+    {
+      label: 'Rank',
+      value: rank ? `#${rank.position}` : 'Unranked',
+      sub: rank
+        ? `of ${plural(rank.of, 'player', 'players')}`
+        : games > 0
+          ? "guests aren't ranked"
+          : 'no games yet',
+      tone: rank ? undefined : 'empty',
+    },
+  ]
+}
+
+function monthLine(month: PlayerStats['month']): string {
+  if (month.games === 0) return 'No games this month yet'
+  return `${formatSignedMoney(month.netCents)} this month · ${plural(month.games, 'game', 'games')}`
+}
+
 /** Home dashboard (§4.1): idle and live states. */
 export function HomeScreen({
   live,
   savedNote,
   onStart,
   onResume,
-  onBoard,
   onSettings,
 }: {
   live: LiveSessionState | null
   savedNote: string | null
   onStart: () => void
   onResume: () => void
-  onBoard: () => void
   onSettings: () => void
 }) {
   const now = useNow(30_000)
@@ -44,6 +127,8 @@ export function HomeScreen({
       cancelled = true
     }
   }, [myPlayerId, live])
+
+  const me = data?.me ?? null
 
   return (
     <div className="screen screen--tabbed">
@@ -88,51 +173,31 @@ export function HomeScreen({
         ) : (
           <>
             <div
-              className={`hero-money ${(data?.me?.lifetimeNetCents ?? 0) >= 0 ? 'pos' : 'neg'}`}
+              className={`hero-money ${(me?.lifetimeNetCents ?? 0) >= 0 ? 'pos' : 'neg'}`}
               style={{ fontSize: '2rem' }}
             >
-              {formatSignedMoney(data?.me?.lifetimeNetCents ?? 0)}
+              {formatSignedMoney(me?.lifetimeNetCents ?? 0)}
             </div>
-            {data?.me && data.me.cumulative.length >= 2 && (
-              <Sparkline values={[0, ...data.me.cumulative]} />
-            )}
+            {me && me.cumulative.length >= 2 && <Sparkline values={[0, ...me.cumulative]} />}
+            {me && <span className="row-sub">{monthLine(me.stats.month)}</span>}
           </>
         )}
       </div>
 
-      {data?.lastSession && (
-        <div className="card">
-          <span className="muted">Last session</span>
-          <div className="row" style={{ padding: 0, minHeight: 0, border: 0 }}>
-            <span className="row-main row-title">
-              {sessionDisplayName(data.lastSession.session.startedAt)}
-            </span>
-            {data.lastSession.myNetCents !== null && (
+      {me && (
+        <div className="stat-grid">
+          {statTiles(me.stats).map((t) => (
+            <div key={t.label} className="card stat-card">
+              <span className="muted">{t.label}</span>
               <span
-                className={`row-end ${data.lastSession.myNetCents >= 0 ? 'pos' : 'neg'}`}
+                className={`stat-value ${t.tone === 'empty' ? 'stat-value--empty' : (t.tone ?? '')}`}
               >
-                {formatSignedMoney(data.lastSession.myNetCents)}
+                {t.value}
               </span>
-            )}
-          </div>
-        </div>
-      )}
-
-      {data && data.top3.length > 0 && (
-        <button className="card" style={{ textAlign: 'left', cursor: 'pointer' }} onClick={onBoard}>
-          <span className="muted">Leaderboard</span>
-          {data.top3.map((r, i) => (
-            <div key={r.player.id} className="row" style={{ padding: 0, minHeight: 36, border: 0 }}>
-              <span className="row-main">
-                {i + 1}. {r.player.name}
-              </span>
-              <span className={`row-end ${r.netCents >= 0 ? 'pos' : 'neg'}`}>
-                {formatSignedMoney(r.netCents)}
-              </span>
+              {t.sub && <span className="row-sub">{t.sub}</span>}
             </div>
           ))}
-          <span className="muted">Full board →</span>
-        </button>
+        </div>
       )}
 
       {!live && (

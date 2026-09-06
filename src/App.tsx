@@ -163,7 +163,6 @@ function SessionApp({ email }: { email: string | null }) {
             onResume={() =>
               setView(live?.session.status === 'counting' ? { name: 'count' } : { name: 'live' })
             }
-            onBoard={() => setView({ name: 'board' })}
             onSettings={() => setView({ name: 'settings' })}
           />
           {tabBar('home')}
