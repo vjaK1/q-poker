@@ -94,6 +94,7 @@ Three bottom tabs: **Home**, **Sessions**, **Board**. Settings via gear icon in 
 
 - **Quick-start:** pre-seats the previous session's roster, each ready at the default buy-in. Adjust from there.
 - Tap a player row to buy them in (records `buy_in` at default amount with timestamp). Rows show `$10 · 19:02` + check when done.
+- Tap a bought-in row again to take them off (2026-09-06): a `correction` voiding that buy-in, note "Undo", offered only while that single buy-in is the player's whole night. If it empties the table, the just-created session is discarded so Home shows no ghost live game; the next tap creates a fresh one.
 - "Add player" → pick from existing players or create new (name + guest flag).
 - Session is created (`status = 'live'`) on the first buy-in, `started_at = now()`.
 
