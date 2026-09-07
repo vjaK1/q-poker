@@ -21,6 +21,10 @@ function tickLabel(cents: number): string {
   return `${cents < 0 ? '-' : ''}$${Math.abs(cents) / 100}`
 }
 
+function tone(cents: number): string {
+  return cents > 0 ? 'pos' : cents < 0 ? 'neg' : ''
+}
+
 /** Measured width of a block, so the SVG can draw in real pixels and keep text undistorted. */
 function useWidth(): [RefObject<HTMLDivElement | null>, number] {
   const ref = useRef<HTMLDivElement>(null)
@@ -40,16 +44,20 @@ function useWidth(): [RefObject<HTMLDivElement | null>, number] {
 /**
  * Bankroll after each game (Home card and player profile). One step per game
  * along the bottom with dates, whole-dollar gridlines with a stronger $0 line,
- * and a touch or hover readout above the plot: the date, that night's net and
- * the bankroll after it. Idle, the readout shows the latest game. One series,
- * one hue (the accent), so no legend.
+ * and a touch or hover readout: the date, that night's net and the bankroll
+ * after it. Two readout styles: 'row' (the profile) keeps a text line above
+ * the plot that idles on the latest game; 'tooltip' (Home, decluttered
+ * 2026-09-07) shows a small label inside the plot only while touching. One
+ * series, one hue (the accent), so no legend.
  */
 export function BankrollChart({
   series,
   height = 170,
+  readout = 'row',
 }: {
   series: PlayerSeriesPoint[]
   height?: number
+  readout?: 'row' | 'tooltip'
 }) {
   const [wrapRef, width] = useWidth()
   const svgRef = useRef<SVGSVGElement>(null)
@@ -89,30 +97,39 @@ export function BankrollChart({
   const game = shown === 0 ? null : series[shown - 1]
   const xLabels = labelIndices(values.length, clamp(Math.floor(plotW / 64), 2, 6))
 
+  const details = (
+    <>
+      <span className="muted">
+        {game
+          ? readout === 'row'
+            ? `${sessionDisplayName(game.session.startedAt)} · game ${shown} of ${series.length}`
+            : sessionDisplayName(game.session.startedAt)
+          : 'Start'}
+      </span>
+      <span>
+        {game && (
+          <>
+            <span className="muted">Night </span>
+            <span className={tone(game.netCents)}>{formatSignedMoney(game.netCents)}</span>
+            {readout === 'row' && <span className="muted"> · </span>}
+          </>
+        )}
+        {readout === 'tooltip' && game && <br />}
+        <span className="muted">Bankroll </span>
+        <strong>{formatSignedMoney(values[shown])}</strong>
+      </span>
+    </>
+  )
+
   return (
     <div className="bankroll-chart">
-      <div className="chart-readout" aria-live="polite">
-        <span className="muted">
-          {game
-            ? `${sessionDisplayName(game.session.startedAt)} · game ${shown} of ${series.length}`
-            : 'Start'}
-        </span>
-        <span>
-          {game && (
-            <>
-              <span className="muted">Night </span>
-              <span className={game.netCents > 0 ? 'pos' : game.netCents < 0 ? 'neg' : ''}>
-                {formatSignedMoney(game.netCents)}
-              </span>
-              <span className="muted"> · </span>
-            </>
-          )}
-          <span className="muted">Bankroll </span>
-          <strong>{formatSignedMoney(values[shown])}</strong>
-        </span>
-      </div>
+      {readout === 'row' && (
+        <div className="chart-readout" aria-live="polite">
+          {details}
+        </div>
+      )}
 
-      <div ref={wrapRef} style={{ minHeight: height }}>
+      <div ref={wrapRef} className="chart-plot" style={{ minHeight: height }}>
         {width > 0 && (
           <svg
             ref={svgRef}
@@ -128,6 +145,10 @@ export function BankrollChart({
             onPointerMove={scrub}
             onPointerLeave={(e) => {
               if (e.pointerType === 'mouse') setActive(null)
+            }}
+            onPointerUp={(e) => {
+              // A tooltip has no idle home, so a lifted finger clears it.
+              if (readout === 'tooltip' && e.pointerType !== 'mouse') setActive(null)
             }}
           >
             {ticks.map((t) => (
@@ -186,6 +207,18 @@ export function BankrollChart({
               strokeWidth={2}
             />
           </svg>
+        )}
+
+        {readout === 'tooltip' && active !== null && width > 0 && (
+          <div
+            className={`chart-tip ${x(active) > width / 2 ? 'chart-tip--left' : 'chart-tip--right'} ${
+              y(values[active]) < PAD.top + 64 ? 'chart-tip--below' : 'chart-tip--above'
+            }`}
+            style={{ left: x(active), top: y(values[active]) }}
+            aria-live="polite"
+          >
+            {details}
+          </div>
         )}
       </div>
     </div>

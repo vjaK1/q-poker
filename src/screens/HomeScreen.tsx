@@ -91,11 +91,6 @@ function statTiles(stats: PlayerStats): StatTile[] {
   ]
 }
 
-function monthLine(month: PlayerStats['month']): string {
-  if (month.games === 0) return 'No games this month yet'
-  return `${formatSignedMoney(month.netCents)} this month · ${plural(month.games, 'game', 'games')}`
-}
-
 /** Home dashboard (§4.1): idle and live states. */
 export function HomeScreen({
   live,
@@ -180,8 +175,9 @@ export function HomeScreen({
             >
               {formatSignedMoney(me?.lifetimeNetCents ?? 0)}
             </div>
-            {me && me.series.length >= 1 && <BankrollChart series={me.series} height={120} />}
-            {me && <span className="row-sub">{monthLine(me.stats.month)}</span>}
+            {me && me.series.length >= 1 && (
+              <BankrollChart series={me.series} height={120} readout="tooltip" />
+            )}
           </>
         )}
       </div>
