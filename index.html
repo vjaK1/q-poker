@@ -6,11 +6,14 @@
     <title>Q.Poker</title>
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <!-- First-paint colour: Paper's --bg. theme.ts keeps it in sync after load. -->
-    <meta name="theme-color" content="#f4efe4" />
+    <!-- First-paint colour: the launch screen ground (--splash-bg). theme.ts takes over once the app is up. -->
+    <meta name="theme-color" content="#030209" />
   </head>
   <body>
-    <div id="root"></div>
+    <!-- Painted before React loads; App renders the same markup until the app is ready. -->
+    <div id="root">
+      <div class="launch"><img class="launch-mark" src="/icon-512.png" width="96" height="96" alt="" /></div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

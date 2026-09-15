@@ -22,7 +22,8 @@ function resolve(pref: ThemePref): 'light' | 'dark' {
   return pref === 'system' ? (darkQuery().matches ? 'dark' : 'light') : pref
 }
 
-function applyTheme(): void {
+/** Apply the stored preference to <html> and the browser chrome. Also used by the launch screen to hand the chrome colour back. */
+export function applyTheme(): void {
   document.documentElement.dataset.theme = resolve(getThemePref())
   // Keep the browser chrome in step with the active theme's background token.
   const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()

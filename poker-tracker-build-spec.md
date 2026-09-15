@@ -256,6 +256,8 @@ Francis pays Josh $4.60
 
 Clean and flat: white/dark surfaces, hairline borders, generous spacing, no gradients or shadows. One accent colour for active/live states, green/red strictly for positive/negative money, amber for discrepancy warnings. Large type for money totals. Everything sized for one-handed phone use in bad lighting.
 
+- **Launch screen** (2026-09-15): the Q.Poker mark (`icon-512.png`) breathing on the splash ground (`--splash-bg`, the manifest's `#030209`) while the login check and the live state load. No text. Held at least 0.8s so a fast load never flashes it; `index.html` paints the same markup before React loads so nothing cream shows in between. Launch only: in-page loads stay as "Loading…" text.
+
 ## 7. Build order
 
 1. Supabase schema + RLS + magic-link auth; `ledger.ts` data layer with typed functions and derivation queries.

@@ -16,6 +16,7 @@ import { PlayerProfileScreen } from './screens/PlayerProfileScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
 import { WhoAreYouScreen } from './screens/WhoAreYouScreen'
 import { TabBar } from './components/TabBar'
+import { LaunchScreen, useLaunchHold } from './components/LaunchScreen'
 import { getSettings } from './lib/settings'
 
 export default function App() {
@@ -31,6 +32,7 @@ function AuthedApp() {
   const [auth, setAuth] = useState<AuthState>({ phase: 'loading' })
   // Read once, before Supabase's own hash processing might rewrite the URL.
   const [authError] = useState(() => consumeUrlAuthError())
+  const held = useLaunchHold()
 
   useEffect(
     () =>
@@ -40,13 +42,7 @@ function AuthedApp() {
     [],
   )
 
-  if (auth.phase === 'loading') {
-    return (
-      <div className="screen screen--center">
-        <p className="muted">Loading…</p>
-      </div>
-    )
-  }
+  if (auth.phase === 'loading' || !held) return <LaunchScreen />
   if (auth.phase === 'signed-out') return <LoginScreen initialError={authError} />
   return <SessionApp email={auth.user.email} />
 }
@@ -89,6 +85,7 @@ function SessionApp({ email }: { email: string | null }) {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [savedNote, setSavedNote] = useState<string | null>(null)
+  const held = useLaunchHold()
 
   const refresh = useCallback(async () => {
     try {
@@ -120,13 +117,7 @@ function SessionApp({ email }: { email: string | null }) {
     })()
   }, [])
 
-  if (loading) {
-    return (
-      <div className="screen screen--center">
-        <p className="muted">Loading…</p>
-      </div>
-    )
-  }
+  if (loading || !held) return <LaunchScreen />
 
   if (loadError !== null && live === null) {
     return (
