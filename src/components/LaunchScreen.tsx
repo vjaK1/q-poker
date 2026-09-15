@@ -3,8 +3,8 @@ import { applyTheme } from '../lib/theme'
 
 /** Navigation start: both the hold and the pulse phase are measured from here. */
 const BOOT_AT = performance.timeOrigin
-/** Never flash the launch screen: hold it at least this long on a fast load. */
-const MIN_MS = 800
+/** Hold the launch screen at least this long: a full breath, never a flash (1.5s, Victor's call). */
+const MIN_MS = 1500
 /** Must match the `breathe` animation duration in index.css. */
 const PERIOD_MS = 2400
 
