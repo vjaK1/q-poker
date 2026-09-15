@@ -63,6 +63,7 @@ interface SessionRow {
   ended_at: string | null
   status: SessionStatus
   created_at: string
+  off_books: boolean
 }
 
 interface TxRow {
@@ -92,6 +93,7 @@ const toSession = (r: SessionRow): Session => ({
   endedAt: r.ended_at,
   status: r.status,
   createdAt: r.created_at,
+  offBooks: r.off_books === true,
 })
 
 const toTx = (r: TxRow): Tx => ({
@@ -184,8 +186,8 @@ export async function unarchivePlayer(id: string): Promise<Player> {
 // -------------------------------- sessions --------------------------------
 
 /** Created on the first buy-in of the night (status 'live', started_at now). */
-export async function createSession(): Promise<Session> {
-  const res = await db().from('sessions').insert({}).select().single()
+export async function createSession(offBooks = false): Promise<Session> {
+  const res = await db().from('sessions').insert({ off_books: offBooks }).select().single()
   return toSession(unwrap<SessionRow>(res))
 }
 
@@ -222,6 +224,19 @@ export async function discardSession(sessionId: string): Promise<Session> {
   const { data, error } = await db()
     .from('sessions')
     .update({ status: 'discarded' })
+    .eq('id', sessionId)
+    .select()
+  if (error) throw new Error(error.message)
+  const rows = (data ?? []) as SessionRow[]
+  if (rows.length === 0) throw new Error('Session not found')
+  return toSession(rows[0])
+}
+
+/** Flip a session on or off the books (§4.11). A sessions update, never a ledger change. */
+export async function setSessionOffBooks(sessionId: string, offBooks: boolean): Promise<Session> {
+  const { data, error } = await db()
+    .from('sessions')
+    .update({ off_books: offBooks })
     .eq('id', sessionId)
     .select()
   if (error) throw new Error(error.message)
@@ -512,12 +527,16 @@ export async function getSessionDetail(sessionId: string): Promise<SessionDetail
   }
 }
 
-/** Quick-start roster: the previous saved session's players, in seat order. */
-export async function getLastSavedRoster(): Promise<Player[]> {
+/**
+ * Quick-start roster: the previous saved session's players, in seat order.
+ * Office nights and off-books house games each remember their own crowd.
+ */
+export async function getLastSavedRoster(offBooks = false): Promise<Player[]> {
   const { data, error } = await db()
     .from('sessions')
     .select('*')
     .eq('status', 'saved')
+    .eq('off_books', offBooks)
     .order('started_at', { ascending: false })
     .limit(1)
     .maybeSingle()

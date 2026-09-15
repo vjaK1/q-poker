@@ -6,6 +6,7 @@ import {
   beginCounting,
   discardSession,
   seatedPlayerIds,
+  setSessionOffBooks,
   type LedgerEvent,
   type LiveSessionState,
   type Player,
@@ -73,7 +74,7 @@ export function LiveSessionScreen({
         <button className="btn btn--inline" onClick={onHome}>
           ‹ Home
         </button>
-        <span className="screen-title">Live</span>
+        <span className="screen-title">{state.session.offBooks ? 'Live · off books' : 'Live'}</span>
         <span className="timer">{formatElapsed(state.session.startedAt, now)}</span>
       </header>
 
@@ -192,6 +193,19 @@ export function LiveSessionScreen({
           </button>
         )}
       </div>
+
+      <button
+        className="btn"
+        disabled={busy}
+        onClick={() =>
+          void run(async () => {
+            await setSessionOffBooks(state.session.id, !state.session.offBooks)
+            await refresh()
+          })
+        }
+      >
+        {state.session.offBooks ? 'Put back on the books' : 'Take off the books'}
+      </button>
 
       {confirmDiscard ? (
         <div className="btn-row">

@@ -36,8 +36,9 @@ export function session(
   id: string,
   startedAt: string,
   status: SessionStatus = 'saved',
+  offBooks = false,
 ): Session {
-  return { id, startedAt, endedAt: null, status, createdAt: startedAt }
+  return { id, startedAt, endedAt: null, status, createdAt: startedAt, offBooks }
 }
 
 export function player(id: string, name: string, isGuest = false): Player {

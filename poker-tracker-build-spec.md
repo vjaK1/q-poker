@@ -97,6 +97,7 @@ Three bottom tabs: **Home**, **Sessions**, **Board**. Settings via gear icon in 
 - Tap a bought-in row again to take them off (2026-09-06): a `correction` voiding that buy-in, note "Undo", offered only while that single buy-in is the player's whole night. If it empties the table, the just-created session is discarded so Home shows no ghost live game; the next tap creates a fresh one.
 - "Add player" → pick from existing players or create new (name + guest flag).
 - Session is created (`status = 'live'`) on the first buy-in, `started_at = now()`.
+- **Off the books** tickbox (2026-09-15, §4.11): stamps the session at creation and swaps the quick-start roster to the last off-books night's crowd.
 
 ### 4.3 Live session
 
@@ -162,6 +163,16 @@ The "this is me" choice used to be a checkbox inside the player edit sheet, whic
 - No creating players from this screen (a wrong pick is fixable, a duplicate profile is not): "Not in the list? Ask whoever runs the game to add you."
 - The "This is me" checkbox is gone from the player edit sheet, so there is exactly one way to do this.
 - Still localStorage per phone; no database change.
+
+### 4.11 Off the books (added 2026-09-15)
+
+A house game run through the app that must not count for the office group.
+
+- **Start session** has an **Off the books** tickbox ("Doesn't count towards the Board or anyone's stats"). The session is stamped `off_books = true` when it is created on the first buy-in. Ticking it also swaps the quick-start roster to the last off-books night's players, and unticking swaps back, so each kind of game remembers its own crowd.
+- **Counts for nothing shared:** the Board (every window; an off-books night never uses a "Last 10" slot), player profiles, the Home tiles and the bankroll chart all ignore it. `countsForStats` in derive.ts (saved and not off books) is the one rule.
+- **Still a real session:** listed in the Sessions tab with an "Off books" tag, with the full detail and audit trail. Export and settle-up are unchanged: exports exist to settle money, so no marker was added, by decision.
+- **Fixable later:** "Take off the books" / "Put back on the books" on the live screen, and an Off the books toggle on the session detail. A `sessions` update, never a ledger change.
+- Column: `sessions.off_books boolean not null default false` (migration 20260915000000). Every existing night stays on the books.
 
 ## 5. Exports
 

@@ -5,6 +5,7 @@ import {
   createSession,
   discardSession,
   getLastSavedRoster,
+  setSessionOffBooks,
   type LedgerEvent,
   type LiveSessionState,
   type Player,
@@ -35,11 +36,16 @@ export function StartSessionScreen({
   const settings = getSettings()
   const [roster, setRoster] = useState<Player[] | null>(null)
   const [adding, setAdding] = useState(false)
+  // Off the books (§4.11): decided here, stamped on the session at its first buy-in.
+  const [offBooks, setOffBooks] = useState(live?.session.offBooks ?? false)
   const { busy, error, run } = useBusy()
 
+  // The quick-start roster follows the tickbox: office nights and house games
+  // each pre-seat their own crowd.
   useEffect(() => {
     let cancelled = false
-    getLastSavedRoster()
+    setRoster(null)
+    getLastSavedRoster(offBooks)
       .then((players) => {
         if (!cancelled) setRoster(players)
       })
@@ -49,7 +55,7 @@ export function StartSessionScreen({
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [offBooks])
 
   // Players already bought in this session (when resuming into this screen).
   const boughtIn = new Map(
@@ -66,9 +72,17 @@ export function StartSessionScreen({
   const rows = [...(roster ?? []), ...extraTonight]
 
   async function buyIn(player: Player) {
-    const sessionId = live?.session.id ?? (await createSession()).id
+    const sessionId = live?.session.id ?? (await createSession(offBooks)).id
     await addBuyIn(sessionId, player.id, settings.defaultBuyInCents)
     await refresh()
+  }
+
+  async function toggleOffBooks(next: boolean) {
+    setOffBooks(next)
+    if (live) {
+      await setSessionOffBooks(live.session.id, next)
+      await refresh()
+    }
   }
 
   // A player can be taken back off only while their whole night is that one
@@ -106,6 +120,21 @@ export function StartSessionScreen({
         <span className="screen-title">Start session</span>
         <span style={{ width: '4.5rem' }} />
       </header>
+
+      <div className="list">
+        <label className="row" style={{ cursor: 'pointer' }}>
+          <span className="row-main">
+            <span className="row-title">Off the books</span>
+            <span className="row-sub">Doesn't count towards the Board or anyone's stats</span>
+          </span>
+          <input
+            type="checkbox"
+            checked={offBooks}
+            disabled={busy}
+            onChange={(e) => void run(() => toggleOffBooks(e.target.checked))}
+          />
+        </label>
+      </div>
 
       <p className="muted">
         Tap a player to buy them in at {formatMoney(settings.defaultBuyInCents)}. Tap them

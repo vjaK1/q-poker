@@ -7,6 +7,7 @@ import {
   computeSettlement,
   computeStreak,
   computeVoidedIds,
+  countsForStats,
   reconcileHint,
   seatedPlayerIds,
   summarizeSession,
@@ -578,5 +579,60 @@ describe('computeSettlement (who pays whom)', () => {
 
   it('refuses an unbalanced night', () => {
     expect(() => computeSettlement(nets({ A: -1000, B: 500 }))).toThrow(/balanced/)
+  })
+})
+
+// ------------------------------ off the books ------------------------------
+
+describe('off the books (§4.11)', () => {
+  const players = [player('alice', 'Alice')]
+  const base = (day: number) => `2026-08-${String(day).padStart(2, '0')}T09:00:00.000Z`
+  const night = (id: string, day: number, net: number, offBooks = false) => ({
+    session: session(id, base(day), 'saved', offBooks),
+    txs: play(id, base(day), 'alice', {
+      inCents: 1000,
+      outCents: 1000 + net,
+      startMin: 0,
+      endMin: 240,
+    }),
+  })
+  const now = new Date('2026-08-31T12:00:00Z')
+
+  it('counts a session only when it is saved and on the books', () => {
+    expect(countsForStats(session('a', base(1)))).toBe(true)
+    expect(countsForStats(session('b', base(1), 'saved', true))).toBe(false)
+    expect(countsForStats(session('c', base(1), 'live'))).toBe(false)
+  })
+
+  it('an off-books night is invisible to the series, the Board and the personal stats', () => {
+    const nights = [night('s1', 1, 1000), night('house', 2, 5000, true), night('s3', 3, -200)]
+    const sessions = nights.map((n) => n.session)
+    const txs = nights.flatMap((n) => n.txs)
+
+    expect(computePlayerSeries('alice', sessions, txs).map((p) => p.cumulativeCents)).toEqual([
+      1000, 800,
+    ])
+    const [row] = computeLeaderboard(players, sessions, txs, {
+      window: 'all', sort: 'net', includeGuests: false, now,
+    })
+    expect(row.games).toBe(2)
+    expect(row.netCents).toBe(800)
+    const stats = computePlayerStats('alice', players, sessions, txs, now)
+    expect(stats.games).toBe(2)
+    expect(stats.bestNight?.netCents).toBe(1000) // not the $50 house game
+  })
+
+  it('an off-books night never uses up a "Last 10" slot', () => {
+    const nights = [
+      ...Array.from({ length: 11 }, (_, i) => night(`s${i + 1}`, i + 1, 100)),
+      night('house', 20, 9999, true), // the newest night of all
+    ]
+    const sessions = nights.map((n) => n.session)
+    const txs = nights.flatMap((n) => n.txs)
+    const [row] = computeLeaderboard(players, sessions, txs, {
+      window: 'last10', sort: 'net', includeGuests: false, now,
+    })
+    expect(row.games).toBe(10)
+    expect(row.netCents).toBe(1000) // the ten most recent nights ON the books
   })
 })

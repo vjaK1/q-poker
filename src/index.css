@@ -733,6 +733,23 @@ button.row {
   color: var(--muted);
 }
 
+/* small inline pill, e.g. "Off books" beside a session date */
+
+.tag {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  vertical-align: middle;
+}
+
 /* bankroll chart (Home card and player profile) */
 
 .bankroll-chart {

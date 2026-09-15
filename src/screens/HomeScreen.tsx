@@ -147,6 +147,7 @@ export function HomeScreen({
             Live · started {formatMelbourneTime(live.session.startedAt)} ·{' '}
             <span className="timer">{formatElapsed(live.session.startedAt, now)}</span>
             {live.session.status === 'counting' && ' · counting stacks'}
+            {live.session.offBooks && ' · off books'}
           </div>
           <div className="hero">
             <div className="hero-money">{formatMoney(live.summary.onTableCents)}</div>

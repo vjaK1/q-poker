@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   discardSession,
   getSessionDetail,
+  setSessionOffBooks,
   type LedgerEvent,
   type SessionDetail,
 } from '../lib/ledger'
@@ -118,6 +119,30 @@ export function SessionDetailScreen({
             <span style={{ color: 'var(--warn)' }}>Off by {formatMoney(s.discrepancyCents)}</span>
           )}
         </span>
+      </div>
+
+      <div className="list">
+        <label className="row" style={{ cursor: 'pointer' }}>
+          <span className="row-main">
+            <span className="row-title">Off the books</span>
+            <span className="row-sub">
+              {detail.session.offBooks
+                ? "Doesn't count towards the Board or anyone's stats"
+                : 'Counts towards the Board and stats'}
+            </span>
+          </span>
+          <input
+            type="checkbox"
+            checked={detail.session.offBooks}
+            disabled={busy}
+            onChange={(e) =>
+              void run(async () => {
+                const updated = await setSessionOffBooks(sessionId, e.target.checked)
+                setDetail({ ...detail, session: updated })
+              })
+            }
+          />
+        </label>
       </div>
 
       <div className="list">

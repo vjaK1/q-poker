@@ -11,6 +11,15 @@ import { logicalDayISO } from './time'
 /** $/hr and win rate display as null until a player has this many sessions (§3). */
 export const RATE_STAT_MIN_SESSIONS = 5
 
+/**
+ * Which sessions feed anything shared (the Board, profiles, Home stats):
+ * saved, and on the books. An off-books house game (§4.11) is a real session
+ * everywhere else but invisible here.
+ */
+export function countsForStats(s: Session): boolean {
+  return s.status === 'saved' && !s.offBooks
+}
+
 export interface LedgerEvent extends Tx {
   voided: boolean
   /** On-table total after this event, counting only non-voided transactions. */
@@ -299,7 +308,7 @@ export function computePlayerSeries(
   txs: Tx[],
 ): PlayerSeriesPoint[] {
   const saved = sessions
-    .filter((s) => s.status === 'saved')
+    .filter(countsForStats)
     .sort((a, b) => a.startedAt.localeCompare(b.startedAt))
   const txsBySession = new Map<string, Tx[]>()
   for (const t of txs) {
@@ -325,9 +334,9 @@ export function computeLeaderboard(
   txs: Tx[],
   opts: LeaderboardOptions,
 ): LeaderboardRow[] {
-  // Only saved sessions ever count toward stats.
+  // Only saved, on-the-books sessions ever count toward stats.
   const saved = sessions
-    .filter((s) => s.status === 'saved')
+    .filter(countsForStats)
     .sort((a, b) => a.startedAt.localeCompare(b.startedAt))
 
   let windowed: Session[]

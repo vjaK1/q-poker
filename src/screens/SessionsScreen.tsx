@@ -43,7 +43,10 @@ export function SessionsScreen({ onOpen }: { onOpen: (sessionId: string) => void
             return (
               <button key={session.id} className="row" onClick={() => onOpen(session.id)}>
                 <span className="row-main">
-                  <span className="row-title">{sessionDisplayName(session.startedAt)}</span>
+                  <span className="row-title">
+                    {sessionDisplayName(session.startedAt)}
+                    {session.offBooks && <span className="tag">Off books</span>}
+                  </span>
                   <span className="row-sub">
                     {playerCount} player{playerCount === 1 ? '' : 's'} · in{' '}
                     {formatMoney(buyInsCents)}

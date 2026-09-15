@@ -19,6 +19,8 @@ export interface Session {
   endedAt: string | null
   status: SessionStatus
   createdAt: string
+  /** Off the books (§4.11): a real session that counts for nothing shared. */
+  offBooks: boolean
 }
 
 export interface Tx {
